@@ -20,7 +20,7 @@ function ArrowUp() {
 /** minimal mono footer: back-to-top, contact line, live time, credit */
 export function ContactFooter() {
   const [time, setTime] = useState("");
-  const [year, setYear] = useState("");
+  const [year, setYear] = useState("2026");
 
   useEffect(() => {
     const fmt = new Intl.DateTimeFormat("en-GB", {
@@ -31,6 +31,7 @@ export function ContactFooter() {
     });
     const tick = () => setTime(fmt.format(new Date()));
     tick();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- year is derived client-side to avoid prerender time instability
     setYear(String(new Date().getFullYear()));
     const id = window.setInterval(tick, 15000);
     return () => window.clearInterval(id);

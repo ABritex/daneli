@@ -1,5 +1,6 @@
 import { useEffect, type RefObject } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ART } from "./art";
 import {
   ADAPTIVE_DPR,
@@ -70,7 +71,7 @@ type Refs = {
   exitRef: RefObject<HTMLDivElement | null>;
 };
 
-export function useReelStage({
+export function useHeroSection({
   canvasRef,
   stageRef,
   wrapperRef,
@@ -117,6 +118,12 @@ export function useReelStage({
 
     const textures: THREE.Texture[] = [];
     const spiralCards: SpiralCard[] = [];
+    let mannequin: THREE.Group | null = null; /* pivot group: float / turn the whole body here */
+    /* procedural pose: the model ships a skeleton but no animation clips, so we drive the bones ourselves */
+    const bones: Record<string, { bone: THREE.Bone; rest: THREE.Quaternion }> = {};
+    const poseEuler = new THREE.Euler();
+    const poseQuat = new THREE.Quaternion();
+    let mannequinBaseY = 0;
 
     let wallTilesByItem: WallTile[][] = Array.from({ length: N }, () => []);
     let wallTracks: THREE.Group[] = [];
@@ -148,6 +155,8 @@ export function useReelStage({
     let lastVigO = -1;
     let lastExitY = 1e9;
     let lastCursor = "";
+    let spiralIntro = 0; // 0 = hidden/loading, 1 = fully in
+    let spiralIntroStart = -1;
 
     let morphLock: Array<WallTile | null> | null = null;
     const morphKi = new Float32Array(N);
@@ -172,7 +181,7 @@ export function useReelStage({
         canvas,
         alpha: true,
         antialias: window.devicePixelRatio < 2, /* MSAA at 2x is a big fill-rate cost for little gain */
-        depth: false, /* nothing writes depth: draw order comes from renderOrder */
+        depth: true, /* the mannequin writes depth (so limbs/torso occlude correctly); cards/tiles still have depthWrite:false and use renderOrder */
         stencil: false,
         powerPreference: "high-performance",
       });
@@ -180,7 +189,7 @@ export function useReelStage({
       return;
     }
 
-    renderer.setClearColor(0x070707, 1);
+    renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const scene = new THREE.Scene();
@@ -189,6 +198,67 @@ export function useReelStage({
     wallGroup.visible = false;
     wallGroup.rotation.order = "XYZ";
     scene.add(wallGroup);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(2, 3, 4);
+    scene.add(dirLight);
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+      "/manniquin/scene.gltf", /* public/manniquin/scene.gltf + scene.bin + textures/ */
+      (gltf) => {
+        if (disposed) return;
+        const obj = gltf.scene;
+        obj.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.frustumCulled = false;
+            mesh.renderOrder = 9000000; /* draw last: on top of the spiral cards (2000000+) and wall tiles */
+            const mat = mesh.material as THREE.MeshStandardMaterial | THREE.MeshStandardMaterial[];
+            const mats = Array.isArray(mat) ? mat : [mat];
+            for (const m of mats) {
+              if (!m) continue;
+              m.transparent = true;
+              m.opacity = 0;
+              m.depthWrite = true;
+              m.depthTest = true;
+              m.needsUpdate = true;
+            }
+          }
+          /* index the bones by a cleaned-up name: "Arm.R_08" -> "armr08" */
+          const bone = child as THREE.Bone;
+          if (bone.isBone) {
+            const key = bone.name.toLowerCase().replace(/[._\s]/g, "");
+            bones[key] = { bone, rest: bone.quaternion.clone() };
+          }
+        });
+
+        const box = new THREE.Box3().setFromObject(obj);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z, 1);
+        const targetH = 520;
+        obj.scale.setScalar(targetH / maxDim);
+
+        box.setFromObject(obj);
+        box.getCenter(center);
+        obj.position.sub(center);
+
+        /* pivot at the middle of the body so turning / floating doesn't swing it off-centre */
+        const holder = new THREE.Group();
+        holder.add(obj);
+        mannequin = holder;
+        mannequinBaseY = holder.position.y;
+        scene.add(holder);
+      },
+      undefined,
+      (err) => {
+        console.error("[hero] mannequin failed to load (expects /public/manniquin/scene.gltf, scene.bin, textures/):", err);
+      },
+    );
 
     const loader = new THREE.TextureLoader();
     const bySrc = new Map<string, THREE.Texture>(); /* same image = one texture / one GPU upload */
@@ -403,6 +473,7 @@ export function useReelStage({
       h: number,
       K: number,
       motionReduced: boolean,
+      intro: number,
     ) => {
       const cardWidth = SPIRAL_CARD_W * SPIRAL_SCALE;
       const cardHeight = SPIRAL_CARD_H * SPIRAL_SCALE;
@@ -434,6 +505,9 @@ export function useReelStage({
         const sy = -(offset * rowPx);
 
         const persp = CAM_DIST / Math.max(CAM_DIST - sz, 1);
+        const yNorm = clamp((sy / persp) / (h * 0.5), -1, 1);
+        const revealOrder = (yNorm + 1) / 2; // 0 = bottom, 1 = top
+        const cardIntro = smooth(revealOrder * 0.72, revealOrder * 0.72 + 0.28, intro);
         /* React Bits translates cards in the screen plane (x/y are NOT shrunk by depth) and only
            scales the card itself by the depth factor. here the camera really is a perspective
            camera, so divide by persp to land on exactly those screen-space numbers */
@@ -471,7 +545,7 @@ export function useReelStage({
              tile. before, every card faded on one shared timer while some were still
              mid-flight, so ghost tiles appeared at the destination before the card did */
           const land = smooth(LAND_FROM, 1, ki);
-          const opacity = (spiralOpacity + (WALL_DIM - spiralOpacity) * t) * (1 - land);
+          const opacity = (spiralOpacity + (WALL_DIM - spiralOpacity) * t) * (1 - land) * cardIntro;
           mesh.material.opacity = opacity;
           mesh.material.color.setScalar(SPIRAL_DIM + (1 - SPIRAL_DIM) * t);
           mesh.visible = opacity > 0.001;
@@ -483,12 +557,12 @@ export function useReelStage({
           mesh.position.copy(spiralPos);
           mesh.scale.copy(spiralScale);
           mesh.quaternion.copy(tiltQuat);
-          mesh.material.opacity = spiralOpacity;
+          mesh.material.opacity = spiralOpacity * cardIntro;
           mesh.material.color.setScalar(SPIRAL_DIM);
           setBlur(blur, blurPx, mesh.scale);
           shape.set(cardWidth, cardHeight, CARD_RADIUS, mesh.scale.x / cardWidth);
           setCover(cover, textures[index], mesh.scale.x / Math.max(mesh.scale.y, 1e-3));
-          mesh.visible = spiralOpacity > 0.001;
+          mesh.visible = spiralOpacity * cardIntro > 0.001;
           mesh.renderOrder =
             Math.round(((sz / Math.max(radius, 1) + 1) / 2) * 100000) + i;
         }
@@ -848,6 +922,60 @@ export function useReelStage({
         morphKi[i] = clamp(m * (1 + MORPH_STAGGER) - (i / N) * MORPH_STAGGER, 0, 1);
       }
 
+      const loaderPlaying = document.documentElement.dataset.loader === "playing";
+      if (loaderPlaying) {
+        spiralIntro = 0;
+        spiralIntroStart = -1;
+      } else if (spiralIntro < 1) {
+        if (spiralIntroStart < 0) spiralIntroStart = time;
+        spiralIntro = smooth(0, 1600, time - spiralIntroStart);
+      }
+      if (mannequin) {
+        const tt = time / 1000;
+        const calm = 1 - smooth(0.02, 0.4, K);
+        /* zero-gravity float + slow turn toward the pointer */
+        mannequin.position.y = mannequinBaseY + Math.sin(tt * 0.8) * 7 * calm;
+        mannequin.rotation.y = Math.sin(tt * 0.35) * 0.25 + pointerDamped.x * 0.05;
+        mannequin.rotation.z = Math.sin(tt * 0.5) * 0.03;
+
+        /* delta is applied in each bone's local space on top of its rest rotation */
+        const pose = (key: string, x: number, y: number, z: number) => {
+          const b = bones[key];
+          if (!b) return;
+          poseEuler.set(x, y, z);
+          b.bone.quaternion.copy(b.rest).multiply(poseQuat.setFromEuler(poseEuler));
+        };
+        const breath = Math.sin(tt * 1.3);
+        pose("torso04", breath * 0.015, Math.sin(tt * 0.5) * 0.08, Math.sin(tt * 0.7) * 0.03);
+        pose("chest05", breath * 0.02, Math.sin(tt * 0.5 + 0.6) * 0.06, 0);
+        pose("neck06", 0, Math.sin(tt * 0.6 + 1) * 0.2, Math.sin(tt * 0.45) * 0.04);
+        pose("head07", Math.sin(tt * 0.9) * 0.04, Math.sin(tt * 0.6 + 1.4) * 0.25, 0);
+        /* arms hang down from the T-pose. if they go UP instead, flip ARM_DROP's sign */
+        const ARM_DROP = 1.05;
+        pose("armr08", 0, 0, ARM_DROP + Math.sin(tt * 0.9) * 0.06);
+        pose("arml011", 0, 0, -ARM_DROP - Math.sin(tt * 0.9 + 0.4) * 0.06);
+        pose("forearmr09", 0, 0, 0.25 + Math.sin(tt * 1.1) * 0.08);
+        pose("forearml012", 0, 0, -0.25 - Math.sin(tt * 1.1 + 0.5) * 0.08);
+        pose("thighl01", Math.sin(tt * 0.7) * 0.06, 0, 0.04);
+        pose("thighr014", Math.sin(tt * 0.7 + Math.PI) * 0.06, 0, -0.04);
+      }
+      if (mannequin) {
+        const mIntro = (1 - Math.pow(1 - spiralIntro, 3)) * (1 - smooth(0.02, 0.4, K));
+        mannequin.visible = mIntro > 0.001;
+        mannequin.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.isMesh) {
+            const mat = mesh.material as THREE.Material | THREE.Material[];
+            const mats = Array.isArray(mat) ? mat : [mat];
+            for (const m of mats) {
+              if (!m) continue;
+              m.transparent = true;
+              m.opacity = mIntro;
+            }
+          }
+        });
+      }
+
       updateWall(p, K, dt, reduceMotion);
       /* the wall only needs fresh world matrices while it is visible / being targeted */
       if (K > 0 || morphLock) wallGroup.updateWorldMatrix(true, true);
@@ -861,7 +989,7 @@ export function useReelStage({
       }
 
       keepLocksContinuous();
-      updateSpiral(w, h, K, reduceMotion);
+      updateSpiral(w, h, K, reduceMotion, spiralIntro);
 
       const heroTextOut = smooth(0.02, 0.45, K);
       const heroTextOpacity = 1 - heroTextOut;
@@ -955,6 +1083,17 @@ export function useReelStage({
       }
       clearWall();
       for (const tex of new Set(textures)) tex.dispose();
+      if (mannequin) {
+        mannequin.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.isMesh) {
+            mesh.geometry.dispose();
+            const mat = mesh.material as THREE.Material | THREE.Material[];
+            const mats = Array.isArray(mat) ? mat : [mat];
+            for (const m of mats) m?.dispose?.();
+          }
+        });
+      }
       scene.clear();
       renderer?.dispose();
       renderer = null;

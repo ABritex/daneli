@@ -3,7 +3,7 @@ import { works } from "@/features/works";
 import { AboutSection } from "./about";
 import { ContactSection } from "./cta";
 import { FeaturedWorks } from "./featured-works";
-import { ReelStage } from "./reel-stage";
+import { HeroSection } from "./hero-section";
 import { ServicesSection } from "./services";
 
 /**
@@ -14,7 +14,7 @@ export function LandingPage() {
     <main className="relative text-foreground">
       <ScrollPill />
       <div data-intro-fade>
-        <ReelStage />
+        <HeroSection />
         <FeaturedWorks works={works} />
         <AboutSection />
         <ServicesSection />

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WorkTransitionProvider } from "@/features/works";
-import { GrainOverlay, IntroSequence, Loader, SiteHeader, SmoothScroll } from "@/components/site";
+import { GrainOverlay, IntroSequence, Loader, SiteHeader, SmoothScroll, SpaceBackground } from "@/components/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,11 +36,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full flex flex-col">
         <SmoothScroll>
           <WorkTransitionProvider>
+            <SpaceBackground />
             <Loader />
             <GrainOverlay />
             <IntroSequence />
             <SiteHeader />
-            {children}
+            <div className="relative z-[1]">{children}</div>
           </WorkTransitionProvider>
         </SmoothScroll>
       </body>

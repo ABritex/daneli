@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 import { EXIT_BAND, EXIT_TRAVEL, HERO_MARKER_VH, STAGE_VH, VIGNETTE } from "./config";
-import { useReelStage } from "./use-reel-stage";
+import { useHeroSection } from "./use-hero-section";
 
-export function ReelStage() {
+export function HeroSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -15,7 +15,7 @@ export function ReelStage() {
   const vignetteRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLDivElement>(null);
 
-  useReelStage({
+  useHeroSection({
     canvasRef,
     stageRef,
     wrapperRef,
@@ -30,9 +30,23 @@ export function ReelStage() {
   return (
     <div ref={wrapperRef} className="relative" style={{ height: `${STAGE_VH}vh` }}>
       <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden">
+        <div
+          ref={heroOverlayRef}
+          className="pointer-events-none relative z-0 flex h-full items-center justify-center px-6 text-center will-change-[transform,opacity]"
+        >
+          <h1
+            id="hero-heading"
+            className="font-monument text-[clamp(5rem,18vw,22rem)] font-extrabold uppercase leading-none text-[#e6e5e0] opacity-100"
+          >
+            DANELI
+          </h1>
+          <p className="absolute left-1/2 top-[calc(50%+clamp(2.8rem,8vw,11rem))] -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.42em] text-foreground/60">
+            Scroll to explore
+          </p>
+        </div>
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 z-0 block h-full w-full"
+          className="absolute inset-0 z-[1] block h-full w-full"
           aria-hidden="true"
         />
         <div
@@ -61,21 +75,6 @@ export function ReelStage() {
           }}
           aria-hidden="true"
         />
-
-        <div
-          ref={heroOverlayRef}
-          className="pointer-events-none relative z-30 flex h-full items-center justify-center px-6 text-center will-change-[transform,opacity]"
-        >
-          <h1
-            id="hero-heading"
-            className="font-monument text-[clamp(5rem,18vw,22rem)] font-extrabold uppercase leading-none text-[#e6e5e0] opacity-100"
-          >
-            DANELI
-          </h1>
-          <p className="absolute left-1/2 top-[calc(50%+clamp(2.8rem,8vw,11rem))] -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.42em] text-foreground/60">
-            Scroll to explore
-          </p>
-        </div>
 
         <div
           ref={heroMetaRef}
