@@ -1,0 +1,379 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: "Monument Extended";
+  src: url("/font-face/MonumentExtended-Ultrabold.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-monument: "Monument Extended", sans-serif;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Animations used by landing-page components ----------------------- */
+@theme {
+  --animate-scroll-bounce: scrollBounce 2s ease-in-out infinite;
+  --animate-scroll-wheel: scrollWheel 2s ease-in-out infinite;
+  --animate-scroll-v: scrollV 2s ease-in-out infinite;
+  --animate-wave: wave 3s ease-in-out infinite;
+
+  @keyframes scrollBounce {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(4px); opacity: 0.8; }
+  }
+  @keyframes scrollV {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(6px); opacity: 1; }
+  }
+  @keyframes scrollWheel {
+    0% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(6px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 0; }
+  }
+  @keyframes wave {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+}
+
+:root {
+  --background: #e5e3e3;
+  --foreground: #5a5959;
+  --card: #e5e3e3;
+  --card-foreground: #5a5959;
+  --popover: #e5e3e3;
+  --popover-foreground: #5a5959;
+  --primary: #5a5959;
+  --primary-foreground: #e5e3e3;
+  --secondary: #5a5959;
+  --secondary-foreground: #e5e3e3;
+  --muted: #5a5959;
+  --muted-foreground: #5a5959;
+  --accent: #5a5959;
+  --accent-foreground: #e5e3e3;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #5a5959;
+  --input: #5a5959;
+  --ring: #5a5959;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Loader                                                              */
+/* html[data-loader] is set by the boot script in <head> BEFORE first  */
+/* paint:  playing -> done   (first visit)                             */
+/*         skip              (repeat visit in the same tab)            */
+/* ------------------------------------------------------------------ */
+html[data-loader="playing"] {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+html[data-loader="skip"] #daneli-loader {
+  display: none;
+}
+
+#daneli-loader[data-phase="exit"] {
+  pointer-events: none;
+}
+
+/* two black halves that split open like a curtain */
+#daneli-loader .dl-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(50% + 1px);
+  background: #000;
+  will-change: transform;
+  transition: transform 900ms cubic-bezier(0.7, 0, 0.2, 1) 250ms;
+}
+#daneli-loader .dl-top { top: 0; }
+#daneli-loader .dl-bottom { bottom: 0; }
+#daneli-loader[data-phase="exit"] .dl-top { transform: translateY(-100%); }
+#daneli-loader[data-phase="exit"] .dl-bottom { transform: translateY(100%); }
+
+#daneli-loader .dl-ui {
+  transition: opacity 300ms ease-out;
+}
+#daneli-loader[data-phase="exit"] .dl-ui {
+  opacity: 0;
+}
+
+/* D waits in the centre, slides to its place when the rest arrives */
+#daneli-loader .dl-d {
+  transform: translateX(var(--d-shift));
+  transition: transform 1000ms cubic-bezier(0.65, 0, 0.25, 1) 250ms;
+}
+#daneli-loader[data-phase="ready"] .dl-d,
+#daneli-loader[data-phase="exit"] .dl-d {
+  transform: translateX(0);
+}
+
+/* A N E L I stagger in (index comes from --i) */
+#daneli-loader .dl-letter {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(14px);
+  transition:
+    opacity 700ms ease-out,
+    filter 700ms ease-out,
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(500ms + var(--i) * 110ms);
+}
+#daneli-loader[data-phase="ready"] .dl-letter,
+#daneli-loader[data-phase="exit"] .dl-letter {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #daneli-loader * {
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* letter stage, paint canvases, and brush (static layout) */
+#daneli-loader #word {
+  position: absolute;
+  inset: 0;
+}
+#daneli-loader .l {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+#daneli-loader .l svg {
+  display: block;
+  overflow: visible;
+}
+#daneli-loader .l canvas.dpaint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+#daneli-loader .l svg.dfill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+}
+#daneli-loader #fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  will-change: opacity;
+}
+#daneli-loader .brush {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+  z-index: 30;
+  will-change: transform;
+  pointer-events: none;
+}
+#daneli-loader .brush svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ------------------------------------------------------------------ */
+/* Intro sequence                                                      */
+/*  1. loader ends        -> html[data-loader] = done | skip           */
+/*  2. white lines draw on a black page                                */
+/*       horizontals: left -> right   verticals: top -> bottom         */
+/*  3. after --intro-hold -> IntroSequence sets html[data-intro="color"], */
+/*     and --background / --foreground transition to the real palette  */
+/*     (everything using bg-background / text-foreground / border-     */
+/*     foreground follows, so the whole site shifts together)          */
+/* ------------------------------------------------------------------ */
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e5e3e3;
+}
+@property --foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #5a5959;
+}
+
+:root {
+  --intro-draw: 900ms;    /* time each line takes to draw */
+  --intro-stagger: 150ms; /* second wave of lines starts this much later */
+  --intro-hold: 1100ms;   /* draw + stagger + a breath, then colours shift */
+  --intro-shift: 1500ms;  /* black/white -> #e5e3e3 / #5a5959 */
+}
+
+/* black page + white ink until data-intro="color" */
+html[data-loader]:not([data-intro="color"]) {
+  --background: #000;
+  --foreground: #fff;
+}
+html {
+  transition:
+    --background var(--intro-shift) ease-in-out,
+    --foreground var(--intro-shift) ease-in-out;
+}
+
+/* content that fades in during the colour shift */
+[data-intro-fade] {
+  transition: opacity var(--intro-shift) ease-in-out;
+}
+html[data-loader]:not([data-intro="color"]) [data-intro-fade] {
+  opacity: 0;
+}
+
+/* grid lines ------------------------------------------------------- */
+@keyframes gridInX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes gridInY {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes navIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.line-x { transform-origin: left; } /* left -> right */
+.line-y { transform-origin: top; }  /* top -> bottom */
+
+/* collapsed ONLY while the loader plays (if anything fails, lines still show) */
+html[data-loader="playing"] .line-x { transform: scaleX(0); }
+html[data-loader="playing"] .line-y { transform: scaleY(0); }
+
+html[data-loader="done"] .line-x,
+html[data-loader="skip"] .line-x {
+  animation: gridInX var(--intro-draw) ease-in-out var(--line-delay, 0ms) backwards;
+}
+html[data-loader="done"] .line-y,
+html[data-loader="skip"] .line-y {
+  animation: gridInY var(--intro-draw) ease-in-out var(--line-delay, 0ms) backwards;
+}
+
+/* nav items: appear with the colour shift (index comes from --i) */
+html[data-loader="playing"] .nav-item { opacity: 0; }
+html[data-loader="done"] .nav-item,
+html[data-loader="skip"] .nav-item {
+  animation: navIn 600ms ease-out calc(var(--intro-hold) + var(--i, 0) * 40ms) backwards;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    scrollbar-width: none; /* native bar hidden: <ScrollPill /> replaces it */
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
