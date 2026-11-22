@@ -46,7 +46,7 @@ const TextGenerateEffect = forwardRef<HTMLDivElement, TextGenerateEffectProps>(
         <div className="mt-4">
           <div
             ref={scopeRef}
-            className="dark:text-white text-black text-2xl leading-snug tracking-wide"
+            className="text-foreground text-2xl leading-snug tracking-wide"
           >
             {wordsArray.map((word, idx) => (
               <span

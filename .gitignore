@@ -47,3 +47,6 @@ next-env.d.ts
 opencode.json
 AGENTS.md
 docs/superpowers/
+
+# archive
+.archive/

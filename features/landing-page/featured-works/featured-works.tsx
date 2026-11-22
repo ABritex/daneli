@@ -36,7 +36,7 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
   );
 
   return (
-    <section id="work" ref={rootRef} className="px-8 pb-24 pt-16 md:px-12 md:pt-5">
+    <section id="work" ref={rootRef} className="px-8 pb-24 pt-24 md:px-12 md:pt-28">
       {/* one shared canvas: sits above the page, below the header (z-40) */}
       <canvas
         ref={canvasRef}
@@ -50,7 +50,7 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
               aria-hidden="true"
               className="mb-2 text-[clamp(4.5rem,16vw,14rem)] font-black leading-[0.82] tracking-[-0.06em] text-foreground/[0.06]"
             >
-              01
+              03
             </p>
             <div className="[&_h1]:text-[clamp(3.5rem,11vw,9.5rem)] [&_h1]:font-black [&_h1]:leading-[0.88] [&_h1]:tracking-[-0.055em] [&_h2]:text-[clamp(3.5rem,11vw,9.5rem)] [&_h2]:font-black [&_h2]:leading-[0.88] [&_h2]:tracking-[-0.055em] [&_p]:text-[clamp(3.5rem,11vw,9.5rem)] [&_p]:font-black [&_p]:leading-[0.88] [&_p]:tracking-[-0.055em] [&_span]:text-[clamp(3.5rem,11vw,9.5rem)] [&_span]:font-black [&_span]:leading-[0.88] [&_span]:tracking-[-0.055em]">
               <FeaturedTitle text="Featured Work" variant="reveal" />
@@ -68,10 +68,6 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
           </div>
         </div>
       </div>
-      <div
-        data-rule
-        className="line-x -mx-8 mb-16 h-px origin-left bg-foreground md:-mx-12"
-      />
 
       <div className="grid grid-cols-1 gap-x-12 gap-y-20 md:grid-cols-2">
         {works.map((w) => (

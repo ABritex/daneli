@@ -84,24 +84,26 @@
 }
 
 :root {
-  --background: #e5e3e3;
-  --foreground: #5a5959;
-  --card: #e5e3e3;
-  --card-foreground: #5a5959;
-  --popover: #e5e3e3;
-  --popover-foreground: #5a5959;
-  --primary: #5a5959;
-  --primary-foreground: #e5e3e3;
-  --secondary: #5a5959;
-  --secondary-foreground: #e5e3e3;
-  --muted: #5a5959;
-  --muted-foreground: #5a5959;
-  --accent: #5a5959;
-  --accent-foreground: #e5e3e3;
+  color-scheme: dark;
+  --background: #070707;
+  --foreground: #e6e5e0;
+  --grid-line: #2a2a2a;
+  --card: #0d0d0d;
+  --card-foreground: #e6e5e0;
+  --popover: #0d0d0d;
+  --popover-foreground: #e6e5e0;
+  --primary: #e6e5e0;
+  --primary-foreground: #070707;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #e6e5e0;
+  --muted: #1a1a1a;
+  --muted-foreground: #8d8a84;
+  --accent: #1a1a1a;
+  --accent-foreground: #e6e5e0;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #5a5959;
-  --input: #5a5959;
-  --ring: #5a5959;
+  --border: #262626;
+  --input: #262626;
+  --ring: #8d8a84;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -294,19 +296,19 @@ html[data-loader="skip"] #daneli-loader {
 @property --background {
   syntax: "<color>";
   inherits: true;
-  initial-value: #e5e3e3;
+  initial-value: #070707;
 }
 @property --foreground {
   syntax: "<color>";
   inherits: true;
-  initial-value: #5a5959;
+  initial-value: #e6e5e0;
 }
 
 :root {
   --intro-draw: 900ms;    /* time each line takes to draw */
   --intro-stagger: 150ms; /* second wave of lines starts this much later */
   --intro-hold: 1100ms;   /* draw + stagger + a breath, then colours shift */
-  --intro-shift: 1500ms;  /* black/white -> #e5e3e3 / #5a5959 */
+  --intro-shift: 1500ms;  /* black/white -> #070707 / #e6e5e0 */
 }
 
 /* black page + white ink until data-intro="color" */
@@ -315,6 +317,7 @@ html[data-loader]:not([data-intro="color"]) {
   --foreground: #fff;
 }
 html {
+  scrollbar-gutter: stable;
   transition:
     --background var(--intro-shift) ease-in-out,
     --foreground var(--intro-shift) ease-in-out;
@@ -344,6 +347,16 @@ html[data-loader]:not([data-intro="color"]) [data-intro-fade] {
 
 .line-x { transform-origin: left; } /* left -> right */
 .line-y { transform-origin: top; }  /* top -> bottom */
+
+/* every site grid rule (frame + section lines) uses the same light grey */
+.line-x,
+.line-y,
+[data-frame-line] {
+  border-color: var(--grid-line);
+}
+.line-x.bg-foreground {
+  background-color: var(--grid-line);
+}
 
 /* collapsed ONLY while the loader plays (if anything fails, lines still show) */
 html[data-loader="playing"] .line-x { transform: scaleX(0); }
@@ -375,5 +388,58 @@ html[data-loader="skip"] .nav-item {
   }
   ::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Rainbow RGB glow (paste at the bottom of globals.css)              */
+/* Usage: className="rgb-btn relative" on a button with a solid fill  */
+/* and a 16px radius. Put the .nav-item intro class on a wrapper, NOT */
+/* on the button, so the glow always sits behind the button's fill.   */
+/* ------------------------------------------------------------------ */
+@property --rgb-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rgb-spin {
+  to { --rgb-angle: 360deg; }
+}
+
+.rgb-btn {
+  --rgb-glow: 14px;     /* how far the glow spreads / how soft it is */
+  --rgb-strength: 0.6;  /* glow opacity */
+
+  /* faint paper grain on the fill, like the reference */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* the glow: a spinning conic gradient, blurred, tucked behind the button */
+.rgb-btn::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 18px;
+  background: conic-gradient(
+    from var(--rgb-angle),
+    #ff2d55, #ff9500, #ffe600, #34f06b, #00c8ff, #6a5cff, #ff2bd6, #ff2d55
+  );
+  filter: blur(var(--rgb-glow));
+  opacity: var(--rgb-strength);
+  pointer-events: none;
+  animation: rgb-spin 4s linear infinite;
+  transition: opacity 250ms ease-out;
+}
+
+.rgb-btn:hover::after,
+.rgb-btn:focus-visible::after {
+  opacity: 0.95;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rgb-btn::after {
+    animation: none;
   }
 }

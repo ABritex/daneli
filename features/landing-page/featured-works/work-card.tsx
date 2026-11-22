@@ -5,6 +5,10 @@ import { TextAnimate } from "@/components/effects";
 
 const FALLBACK_VIDEO = "/bg-test.mp4";
 
+const GRAIN_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>";
+const GRAIN_URL = `url("data:image/svg+xml,${encodeURIComponent(GRAIN_SVG)}")`;
+
 type WorkCardProps = {
   work: Work;
   onOpen: (event: React.MouseEvent, work: Work) => void;
@@ -23,8 +27,17 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
     >
       <div
         data-media
-        className="relative aspect-[4/3] w-full overflow-hidden bg-[#e5e3e3]"
+        className="relative aspect-[4/3] w-full overflow-hidden bg-[#070707]"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: GRAIN_URL,
+            opacity: 0.6,
+            mixBlendMode: "overlay",
+          }}
+        />
         {/* src is attached lazily once the card is near the viewport */}
         <video
           data-src={w.video ?? FALLBACK_VIDEO}

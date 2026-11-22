@@ -15,7 +15,7 @@ import { gsap } from "gsap";
  */
 
 /** page colour the card dissolves into. Must equal the slug page background. */
-export const PAGE_BG = "#e5e3e3";
+export const PAGE_BG = "#070707";
 /** the attribute every slug-page element that should fade in / out carries */
 export const FADE_ATTR = "data-work-fade";
 

@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GridLine } from "../grid";
 
-const NAV_ITEMS = [
-  { label: "work", href: "/" },
-  { label: "about", href: "/about" },
-  { label: "resume", href: "/resume" },
-  { label: "blog", href: "/blog" },
-  { label: "contact", href: "/contact" },
+/** section links */
+const NAV_LINKS = [
+  { label: "Work", href: "/#work" },
+  { label: "About", href: "/#about" },
 ];
+
+/** outlined button (the "Sign In" slot) */
+const SECONDARY = { label: "Resume", href: "/resume" };
+
+/** filled button with the rainbow RGB glow (the "Join Waitlist" slot).
+    now points at the contact section on the landing page */
+const PRIMARY = { label: "Contact", href: "/#contact" };
 
 /**
  * Pure CSS intro: `.nav-item` is hidden while the loader plays and fades in
@@ -19,102 +22,60 @@ const NAV_ITEMS = [
  */
 const idx = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
+/* NB: --radius is 0 in this theme, so rounded-2xl & co. render square.
+   explicit px radii (and rounded-full) are used on purpose. */
+const buttonBase =
+  "inline-flex items-center justify-center rounded-[16px] px-5 py-2.5 text-sm font-medium leading-none transition-colors duration-200";
+
 export function Nav() {
+  const pathname = usePathname();
+  const isActive = (href: string) => {
+    if (href.includes("#")) return false;
+    return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
-    <nav className="relative flex h-full w-full items-center justify-between py-0" aria-label="Primary">
-      <Link
-        href="/"
-        aria-label="DanEli home"
+    <nav className="relative flex h-full w-full items-center justify-center py-0" aria-label="Primary">
+      <div
         style={idx(0)}
-        className="nav-item flex items-center leading-none"
+        className="nav-item flex items-center gap-1.5 rounded-[22px] border border-foreground/[0.06] bg-foreground/[0.09] p-2 backdrop-blur-xl md:gap-2"
       >
-        <span
-          aria-hidden="true"
-          className="block h-10 w-auto shrink-0 bg-current"
-          style={{
-            aspectRatio: "1384.67 / 1664.43",
-            maskImage: 'url("/daneli-word/daneli-logo-d.svg")',
-            maskPosition: "center",
-            maskRepeat: "no-repeat",
-            maskSize: "contain",
-            WebkitMaskImage: 'url("/daneli-word/daneli-logo-d.svg")',
-            WebkitMaskPosition: "center",
-            WebkitMaskRepeat: "no-repeat",
-            WebkitMaskSize: "contain",
-          }}
-        />
-      </Link>
+        <div className="hidden items-center gap-1 pl-3 pr-2 md:flex">
+          {NAV_LINKS.map((item, i) => (
+            <a
+              key={item.href}
+              href={item.href}
+              style={idx(i + 1)}
+              className="nav-item px-2.5 py-2 text-sm font-medium leading-none text-foreground/55 transition-colors duration-200 hover:text-foreground"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
 
-      <div className="hidden items-center gap-6 md:flex">
-        {NAV_ITEMS.map((item, i) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={idx(i + 1)}
-            className="nav-item flex items-center text-xs uppercase leading-none tracking-[0.2em] hover:opacity-70"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
-
-      <span style={idx(6)} className="nav-item flex items-center">
         <Link
-          href="/contact"
-          className="inline-flex items-center justify-center rounded-none border border-foreground bg-transparent px-4 py-2 text-xs uppercase leading-none tracking-[0.2em] transition-colors hover:bg-foreground hover:text-background"
+          href={SECONDARY.href}
+          style={idx(3)}
+          aria-current={isActive(SECONDARY.href) ? "page" : undefined}
+          className={`nav-item ${buttonBase} border border-foreground/25 text-foreground hover:bg-foreground/10`}
         >
-          contact me
+          {SECONDARY.label}
         </Link>
-      </span>
+
+        {/* the intro fade lives on this wrapper, not the button, so the glow
+            (z-index -1 on the button) always paints behind the button's fill */}
+        <span style={idx(4)} className="nav-item inline-flex">
+          <Link
+            href={PRIMARY.href}
+            aria-current={isActive(PRIMARY.href) ? "page" : undefined}
+            className={`rgb-btn relative ${buttonBase} bg-foreground text-background hover:bg-foreground/85`}
+          >
+            {PRIMARY.label}
+          </Link>
+        </span>
+      </div>
     </nav>
   );
 }
 
-export function NavFrameLines() {
-  const pathname = usePathname();
-  const leftRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const els = [leftRef.current, rightRef.current].filter(
-      (el): el is HTMLDivElement => Boolean(el),
-    );
-    const apply = () => {
-      const h = window.scrollY + window.innerHeight;
-      for (const el of els) el.style.height = `${h}px`;
-    };
-    apply();
-    window.addEventListener("scroll", apply, { passive: true });
-    window.addEventListener("resize", apply);
-    return () => {
-      window.removeEventListener("scroll", apply);
-      window.removeEventListener("resize", apply);
-    };
-  }, [pathname]);
-
-  return (
-    <>
-      <div
-        ref={leftRef}
-        aria-hidden="true"
-        data-frame-line
-        className="line-y pointer-events-none absolute left-4 top-0 z-[10005] h-screen border-l border-foreground transition-[height] duration-700 ease-out md:left-6"
-      />
-      <div
-        ref={rightRef}
-        aria-hidden="true"
-        data-frame-line
-        className="line-y pointer-events-none absolute right-4 top-0 z-[10005] h-screen border-r border-foreground transition-[height] duration-700 ease-out md:right-6"
-      />
-      <GridLine data-frame-line className="fixed top-6 z-[10005]" />
-      <GridLine
-        data-frame-line
-        className="fixed top-[100px] z-[10005]"
-        delay="var(--intro-stagger)"
-      />
-    </>
-  );
-}
-
 export default Nav;
-

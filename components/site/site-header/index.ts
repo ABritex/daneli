@@ -1,2 +1,2 @@
-export { Nav, NavFrameLines } from "./nav";
+export { Nav } from "./nav";
 export { SiteHeader } from "./site-header";
