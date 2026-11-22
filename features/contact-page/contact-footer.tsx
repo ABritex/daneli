@@ -20,6 +20,7 @@ function ArrowUp() {
 /** minimal mono footer: back-to-top, contact line, live time, credit */
 export function ContactFooter() {
   const [time, setTime] = useState("");
+  const [year, setYear] = useState("");
 
   useEffect(() => {
     const fmt = new Intl.DateTimeFormat("en-GB", {
@@ -30,6 +31,7 @@ export function ContactFooter() {
     });
     const tick = () => setTime(fmt.format(new Date()));
     tick();
+    setYear(String(new Date().getFullYear()));
     const id = window.setInterval(tick, 15000);
     return () => window.clearInterval(id);
   }, []);
@@ -84,7 +86,7 @@ export function ContactFooter() {
 
         <div data-footer-item className="col-span-2 md:col-span-1 md:text-right">
           <p>Designed &amp; built by</p>
-          <p className="text-foreground">Daniel Eli © {new Date().getFullYear()}</p>
+          <p className="text-foreground">Daniel Eli © {year || "2026"}</p>
         </div>
       </div>
     </footer>
