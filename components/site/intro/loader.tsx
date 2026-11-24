@@ -3,23 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 
-/**
- * Intro loader: "ink drop" reveal.
- *
- * 1. Light screen with DANELI (dark) holds for a beat.
- * 2. A small soft dot opens just under the wordmark.
- * 3. The dot accelerates into a big feathered circle that eats the light
- *    screen and reveals the real (dark) page underneath. DANELI flips from
- *    dark to light as the circle passes over it.
- *
- * How it works: two stacked layers share one centre point.
- *   - cover: light bg + dark DANELI, masked with a hole that grows
- *   - ink:   light DANELI, masked with the inverse (visible only inside the hole)
- * Where the soft edge overlaps, both are half visible, so the word fades
- * through mid-grey, like in the reference.
- */
+// landing loader, does the ink drop reveal thing on the home page
 
-const HOLD_MS = 700;        // light screen before the dot appears
+const HOLD_MS = 700;        // minimum time the light screen holds before the dot can appear
+const HERO_MAX_WAIT_MS = 12000; // never keep people on the loader longer than this, even if the model is slow
 const GROW_MS = 1300;       // one continuous growth: scale 0 -> full screen
 const SNAP_AT_MS = 450;     // when the real page starts fading in underneath
 const ORIGIN_X = 0.5;       // fraction of viewport width
@@ -134,7 +121,22 @@ export function Loader() {
       if (FX_GRAIN) jitterGrain();
     };
 
-    const tl = gsap.timeline({ delay: HOLD_MS / 1000 });
+    /* paused: it only starts once the minimum hold has passed AND the hero reports it is ready
+       (model + textures loaded, GPU warmed). slow PCs just see the wordmark a little longer */
+    const tl = gsap.timeline({ paused: true });
+    let holdDone = false;
+    let forced = false;
+    let started = false;
+    const heroReady = () => (window as unknown as { __heroReady?: boolean }).__heroReady === true;
+    const tryStart = () => {
+      if (started || !holdDone || !(forced || heroReady())) return;
+      started = true;
+      window.removeEventListener("daneli-hero-ready", tryStart);
+      tl.play();
+    };
+    window.addEventListener("daneli-hero-ready", tryStart);
+    timers.push(window.setTimeout(() => { holdDone = true; tryStart(); }, HOLD_MS));
+    timers.push(window.setTimeout(() => { holdDone = true; forced = true; tryStart(); }, HERO_MAX_WAIT_MS));
 
     // 1. one continuous growth, scale 0 -> full screen (slow start, fast finish)
     tl.call(() => {
@@ -165,6 +167,7 @@ export function Loader() {
     });
 
     return () => {
+      window.removeEventListener("daneli-hero-ready", tryStart);
       tl.kill();
       timers.forEach((t) => window.clearTimeout(t));
       document.body.style.overflow = prevOverflow;
@@ -187,6 +190,7 @@ export function Loader() {
 
   return (
     <div
+      id="daneli-loader"
       aria-hidden="true"
       style={{
         position: "fixed",

@@ -64,7 +64,6 @@ export const WALL_SCROLL_BOOST_FACTOR = 0.35;
 export const WALL_SCROLL_BOOST_MAX = 150;
 export const WALL_EXIT_RISE = 160; /* wall drifts up as the stage unpins, instead of zooming + fading to black */
 
-/** same switch as use-work-scene.ts: keep the animation even when the OS asks for reduced motion */
 export const IGNORE_REDUCED_MOTION = true;
 
 /* perf knobs */
@@ -74,3 +73,7 @@ export const MIN_DPR = 1.25;
 export const BLUR_CUTOFF_PX = 0.4; /* below this the 16-tap blur loop is skipped (it was running for sub-pixel blur during the morph) */
 export const EXIT_BAND = 0.3; /* exit dissolve: soft edge height, as a fraction of the stage */
 export const EXIT_TRAVEL = 0.6; /* exit dissolve: how far the edge rises, as a fraction of the stage */
+/* selected reels: the embedded video. paste any YouTube link (watch, youtu.be, shorts or embed).
+   leave it empty to show the placeholder text instead */
+export const REELS_VIDEO_URL = "";
+export const REELS_VIDEO_PLACEHOLDER = "Embed video / paste a YouTube URL in config.ts";

@@ -1,265 +1,140 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
-
-/** same switch as the reel stage / work scene: keep the animation even when the OS asks for reduced motion */
-const IGNORE_REDUCED_MOTION = true;
-
-const WORD = "PORTFOLIO".split("");
-
-type Layer = "back" | "front";
-
-/** one row of masked letters. `back` is a bright filled word behind the face, `front` is the outline that crosses over it */
-function Word({ layer }: { layer: Layer }) {
-  return (
-    <span
-      className="flex select-none font-monument font-extrabold uppercase leading-none"
-      style={{ fontSize: "clamp(4rem, 14vw, 16rem)", color: "#e6e5e0" }}
-      aria-hidden="true"
-    >
-      {WORD.map((l, i) => (
-        <span key={`${layer}${i}`} className="inline-block overflow-y-clip pb-[0.06em]">
-          <span
-            data-letter={layer}
-            className={
-              layer === "back"
-                ? "inline-block"
-                : "inline-block text-transparent"
-            }
-            style={
-              layer === "front"
-                ? { WebkitTextStroke: "2px rgba(230,229,224,0.95)" }
-                : undefined
-            }
-          >
-            {l}
-          </span>
-        </span>
-      ))}
-    </span>
-  );
-}
+import { useRef, useState } from "react";
+import { Highlighter } from "@/components/ui/highlighter";
+import { PortfolioWord } from "./components/portfolio-word";
+import { useAboutAnimation } from "./hooks/use-about-animation";
 
 export function AboutSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const imageWrapRef = useRef<HTMLDivElement>(null);
+  const [copyDone, setCopyDone] = useState(false);
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    const measure = measureRef.current;
-    const imageWrap = imageWrapRef.current;
-    if (!section || !measure || !imageWrap) return;
-
-    const q = gsap.utils.selector(section);
-    const mm = gsap.matchMedia();
-
-    mm.add(
-      { reduce: "(prefers-reduced-motion: reduce)" },
-      (ctx) => {
-        const { reduce } = ctx.conditions as { reduce: boolean };
-
-        const backWrap = q("[data-word-wrap='back']");
-        const frontWrap = q("[data-word-wrap='front']");
-        const image = q("[data-image]");
-        const copyItems = q("[data-copy-item]");
-        const lines = q("[data-copy-line]");
-        const rule = q("[data-rule]");
-
-        /* how far each one has to travel to be completely out of the viewport.
-           measured, so it holds at any screen size (+6% so nothing peeks at the edge) */
-        const vw = () => window.innerWidth;
-        const wordOut = () => -(vw() / 2 + measure.offsetWidth / 2 + vw() * 0.06);
-        const imageOut = () => vw() / 2 + imageWrap.offsetWidth / 2 + vw() * 0.06;
-
-        /* reduced motion: show the end state (empty stage + info), nothing animates */
-        if (!IGNORE_REDUCED_MOTION && reduce) {
-          gsap.set([backWrap, frontWrap, imageWrap], { autoAlpha: 0 });
-          gsap.set(copyItems, { opacity: 1, y: 0 });
-          gsap.set(lines, { yPercent: 0 });
-          gsap.set(rule, { scaleX: 1 });
-          return;
-        }
-
-        /* the about info stays hidden until the user scrolls into it */
-        gsap.set(copyItems, { opacity: 0, y: 90 });
-        gsap.set(lines, { yPercent: 115 });
-        gsap.set(rule, { scaleX: 0, transformOrigin: "center center" });
-
-        /* ---------- 1. ENTRY: face + word reveal while the section scrolls in ---------- */
-        const entry = gsap.timeline({
-          defaults: { ease: "power2.out" },
-          scrollTrigger: {
-            trigger: section,
-            start: "top 90%",
-            end: "top top",
-            scrub: 1,
-          },
-        });
-
-        entry
-          .fromTo(
-            image,
-            { yPercent: 12, scale: 1.14, clipPath: "inset(100% 0% 0% 0%)" },
-            { yPercent: 0, scale: 1, clipPath: "inset(0% 0% 0% 0%)", duration: 1 },
-            0,
-          )
-          .fromTo(
-            q("[data-letter='back']"),
-            { yPercent: 105 },
-            { yPercent: 0, duration: 0.7, stagger: 0.045, ease: "power3.out" },
-            0.05,
-          )
-          .fromTo(
-            q("[data-letter='front']"),
-            { yPercent: 105 },
-            { yPercent: 0, duration: 0.7, stagger: 0.045, ease: "power3.out" },
-            0.25,
-          );
-
-        /* ---------- 2. PINNED: word exits LEFT, face exits RIGHT, info rises ---------- */
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-
-        /* hold: face + word sit alone first */
-        tl.to({}, { duration: 0.12 });
-
-        /* the exit. both start slowly and pick up speed as they leave the frame.
-           the outline layer travels a bit further than the filled one, so the two
-           layers pull apart and the face reads as sitting between them */
-        tl.to(backWrap, { x: wordOut, ease: "power2.in", duration: 0.5 }, 0.12);
-        tl.to(
-          frontWrap,
-          { x: () => wordOut() - vw() * 0.08, ease: "power2.in", duration: 0.5 },
-          0.12,
-        );
-        tl.to(imageWrap, { x: imageOut, ease: "power2.in", duration: 0.5 }, 0.12);
-        tl.to(image, { scale: 0.92, ease: "power2.in", duration: 0.5 }, 0.12);
-
-        /* the information, only as the stage clears: rule draws from the centre,
-           lines slide up out of their masks, the rest rises and fades in */
-        tl.to(rule, { scaleX: 1, duration: 0.22, ease: "power2.inOut" }, 0.5);
-        tl.to(
-          lines,
-          { yPercent: 0, duration: 0.3, stagger: 0.07, ease: "power3.out" },
-          0.52,
-        );
-        tl.to(
-          copyItems,
-          { opacity: 1, y: 0, duration: 0.32, stagger: 0.08, ease: "power3.out" },
-          0.52,
-        );
-
-        /* hold the final state while the section unpins */
-        tl.to({}, { duration: 0.16 });
-      },
-      section,
-    );
-
-    return () => mm.revert();
-  }, []);
+  useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCopyDone });
 
   return (
-    <section id="about" ref={sectionRef} className="relative h-[340vh] px-6 md:px-12">
-      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+    <section id="about" ref={sectionRef} className="relative h-[400vh] px-6 md:px-12">
+      <div className="sticky top-0 isolate flex h-dvh items-center overflow-hidden">
         <div className="relative mx-auto w-full max-w-7xl">
-          <div className="relative flex min-h-[78vh] items-center justify-center">
-            {/* BACK word: bright filled, sits behind the face */}
+          <div className="relative flex min-h-[78dvh] items-center justify-center">
+            {/* back word, sits behind daniel */}
             <div
               data-word-wrap="back"
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center will-change-transform"
             >
-              <span ref={measureRef} className="inline-flex">
-                <Word layer="back" />
+              <span ref={measureRef} className="inline-flex shrink-0">
+                <PortfolioWord layer="back" />
               </span>
             </div>
 
-            {/* Face */}
-            <div
-              ref={imageWrapRef}
-              data-image-wrap
-              className="relative z-10 w-[min(62vw,400px)] will-change-transform"
-            >
+            {/* daniel image, pinned to bottom of the sticky stage */}
+            <div className="pointer-events-none absolute inset-x-0 -bottom-[12vh] z-10 flex justify-center">
               <div
-                data-image
-                className="relative will-change-transform"
-                style={{
-                  WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)",
-                  maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)",
-                }}
+                ref={imageWrapRef}
+                data-image-wrap
+                className="relative aspect-[1526/1892] h-[min(96svh,calc(96vw*1.2398))] will-change-transform"
               >
-                <Image
-                  src="/daniel.png"
-                  alt="Daniel"
-                  width={750}
-                  height={908}
-                  className="h-auto w-full object-cover"
-                />
+                <div
+                  data-image
+                  className="relative h-full w-full will-change-transform"
+                  style={{ transformOrigin: "50% 100%" }}
+                >
+                  <Image
+                    src="/daniel.png"
+                    alt="Daniel"
+                    width={1526}
+                    height={1892}
+                    priority
+                    sizes="(max-width: 768px) 92vw, 720px"
+                    className="h-full w-full object-contain object-bottom"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* FRONT word: outline, crosses over the face */}
+            {/* front outline word, goes over the image */}
             <div
               data-word-wrap="front"
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center will-change-transform"
             >
-              <Word layer="front" />
+              <PortfolioWord layer="front" />
             </div>
 
-            {/* About info: centred, hidden until the stage has cleared */}
+            {/* the actual about copy */}
             <div
               data-copy
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center px-2 text-center"
+              className="absolute inset-0 z-30 grid grid-cols-12 content-center gap-x-6 text-left"
             >
-              <p
-                data-copy-item
-                className="font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/45"
-              >
-                04 / About
-              </p>
-
-              <div
-                data-rule
-                className="mt-5 h-px w-full max-w-xs bg-[var(--grid-line)]"
-              />
-
-              <div className="mt-6 overflow-hidden py-2">
-                <h2
-                  data-copy-line
-                  className="text-[clamp(2.4rem,8vw,7rem)] font-black leading-[0.92] tracking-[-0.055em] text-foreground"
+              <div className="col-span-12 md:col-span-8 md:col-start-4">
+                <p
+                  data-copy-item
+                  className="mb-6 font-mono text-[11px] uppercase tracking-[0.32em] text-foreground/55"
                 >
-                  Daniel Eli
-                </h2>
+                  <Highlighter
+                    action="underline"
+                    color="rgba(230,229,224,0.45)"
+                    strokeWidth={1}
+                    iterations={1}
+                    animationDuration={600}
+                    active={copyDone}
+                  >
+                    Elijah Daniel V. Reyes
+                  </Highlighter>
+                </p>
+
+                <p
+                  data-copy-item
+                  className="text-balance text-[clamp(1.15rem,2.35vw,2.5rem)] font-semibold leading-[1.18] tracking-[-0.03em] text-foreground"
+                >
+                  <span className="text-foreground/40">I am a </span>
+                  <Highlighter
+                    action="highlight"
+                    color="rgba(230,229,224,0.2)"
+                    iterations={1}
+                    animationDuration={700}
+                    active={copyDone}
+                  >
+                    creative generalist
+                  </Highlighter>{" "}
+                  <span className="text-foreground/40">who creates </span>
+                  <Highlighter
+                    action="underline"
+                    color="rgba(230,229,224,0.35)"
+                    strokeWidth={1.5}
+                    iterations={1}
+                    animationDuration={650}
+                    active={copyDone}
+                  >
+                    3D Design, Motion Graphics, Visual Effects, Cinematography &amp; Videography
+                  </Highlighter>{" "}
+                  <span className="text-foreground/40">for/about </span>
+                  <Highlighter
+                    action="highlight"
+                    color="rgba(230,229,224,0.12)"
+                    iterations={1}
+                    animationDuration={650}
+                    active={copyDone}
+                  >
+                    entertainment like music videos, short-form content, marketing/advertisements, &amp; animation
+                  </Highlighter>{" "}
+                  <span className="text-foreground/40">through </span>
+                  <Highlighter
+                    action="underline"
+                    color="rgba(230,229,224,0.3)"
+                    strokeWidth={1}
+                    iterations={1}
+                    animationDuration={600}
+                    active={copyDone}
+                  >
+                    Autodesk Maya, Adobe After Effects, Adobe Premiere Pro, Davinci Resolve, &amp; Sony cameras
+                  </Highlighter>
+                  .
+                </p>
               </div>
-
-              <p
-                data-copy-item
-                className="mt-5 max-w-md text-base leading-relaxed text-foreground/65 md:text-lg"
-              >
-                Creative developer and designer crafting immersive digital experiences with
-                motion, detail, and purpose.
-              </p>
-
-              <p
-                data-copy-item
-                className="mt-7 flex gap-3 font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/45"
-              >
-                <span>Designer</span>
-              </p>
             </div>
           </div>
         </div>

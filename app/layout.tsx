@@ -19,8 +19,7 @@ export const metadata: Metadata = {
   description: "DanEli — portfolio",
 };
 
-// Boot the loader and force top-of-page on refresh.
-const BOOT = `(function(){var d=document.documentElement;d.dataset.loader="playing";try{history.scrollRestoration="manual"}catch(e){}try{if(location.hash){history.replaceState(null,"",location.pathname+location.search)}}catch(e){}try{window.scrollTo(0,0)}catch(e){}window.addEventListener("beforeunload",function(){try{window.scrollTo(0,0)}catch(e){}})})();`;
+const BOOT = `(function(){var d=document.documentElement;var isHome=location.pathname==="/";d.dataset.loader=isHome?"playing":"skip";if(!isHome){d.dataset.intro="color";d.style.setProperty("--intro-hold","0ms");d.style.setProperty("--intro-shift","0ms");}try{history.scrollRestoration="manual"}catch(e){}try{if(location.hash){history.replaceState(null,"",location.pathname+location.search)}}catch(e){}try{window.scrollTo(0,0)}catch(e){}window.addEventListener("beforeunload",function(){try{window.scrollTo(0,0)}catch(e){}})})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -30,7 +29,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        {/* inline (not next/script) so the state is set before first paint */}
         <script dangerouslySetInnerHTML={{ __html: BOOT }} />
       </head>
       <body className="min-h-full flex flex-col">

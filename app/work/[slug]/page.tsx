@@ -1,8 +1,7 @@
 import { works } from "@/features/works";
 import { WorkPage } from "@/features/work-page";
 
-// The page depends entirely on the URL param, and the card <-> page morph
-// expects the resolved page before navigation completes, so allow blocking.
+// needs the param resolved before nav finishes for the morph
 export const instant = false;
 
 export const generateStaticParams = () => {

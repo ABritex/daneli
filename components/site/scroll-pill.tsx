@@ -14,13 +14,7 @@ const THUMB_RATE_DRAG = 24; // thumb smoothing while following the pointer
 const getLenis = () => (window as unknown as { __lenis?: Lenis }).__lenis;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
-/**
- * Short vertical scroll pill pinned to the right-centre of the screen.
- * - follows the page scroll (smoothed)
- * - widens on hover / drag
- * - click or drag the track: the thumb tracks the pointer and the page glides to it through Lenis
- * - stays hidden until the loader has finished
- */
+// lil scroll pill on the right side
 export function ScrollPill() {
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);

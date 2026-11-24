@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BLUR_CUTOFF_PX, CARD_RADIUS } from "./config";
+import { BLUR_CUTOFF_PX, CARD_RADIUS } from "../config/config";
 
 /* MeshBasicMaterial map sampling with (1) a cheap disc blur (uBlur = radius in uv units) and
    (2) the React Bits spiral card look: rounded corners (uShape = card

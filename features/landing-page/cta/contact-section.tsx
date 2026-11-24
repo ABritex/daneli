@@ -3,16 +3,11 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ContactFooter } from "./contact-footer";
-import { ContactScene } from "./contact-scene";
+import { ContactFooter } from "./components/contact-footer";
+import { ContactScene } from "./components/contact-scene";
+import { CTA_HREF, CTA_LABEL, HEADLINE } from "./config";
 
 gsap.registerPlugin(ScrollTrigger);
-
-/* edit these: where the button goes and what it says */
-const CTA_HREF = "#";
-const CTA_LABEL = "Let's talk";
-
-const HEADLINE = ["Let's", "work", "together"];
 
 export function ContactSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -24,7 +19,6 @@ export function ContactSection() {
     const ctx = gsap.context(() => {
       const q = gsap.utils.selector(section);
 
-      /* headline: words rise out of masks, then the button and footer fade up */
       gsap
         .timeline({
           scrollTrigger: { trigger: section, start: "top 60%", once: true },
@@ -64,7 +58,7 @@ export function ContactSection() {
       ref={sectionRef}
       className="relative isolate flex min-h-screen flex-col overflow-hidden"
     >
-      {/* soft light pooling in the centre, fading into the page colour */}
+      {/* soft glow behind the headline */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-20"
@@ -74,19 +68,17 @@ export function ContactSection() {
         }}
       />
 
-      {/* three.js stones */}
       <ContactScene />
 
-      {/* CTA */}
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-32 text-center">
         <p
           data-eyebrow
-          className="font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/50"
+          className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50"
         >
-          06 / Contact — Have a project in mind?
+          Have a project in mind?
         </p>
 
-        <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] text-[clamp(3rem,9vw,8.5rem)] font-black leading-[0.9] tracking-[-0.055em] text-foreground">
+        <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] font-monument text-[clamp(2.2rem,7.8vw,8rem)] font-extrabold uppercase leading-[0.95] tracking-normal text-foreground">
           {HEADLINE.map((w) => (
             <span key={w} className="inline-block overflow-y-clip pb-[0.08em]">
               <span data-word className="inline-block">

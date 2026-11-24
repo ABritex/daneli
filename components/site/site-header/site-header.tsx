@@ -7,21 +7,36 @@ import { Nav } from "./nav";
 
 const getLenis = () => (window as unknown as { __lenis?: Lenis }).__lenis;
 
-/**
- * Fixed site nav. Hides when it overlaps the footer.
- * Re-evaluated on every route change: the header lives in the layout, so it survives
- * navigation and would otherwise keep the previous page's state.
- */
 export function SiteHeader() {
   const pathname = usePathname();
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
+    if (pathname === "/") return;
+    const root = document.documentElement;
+    if (root.dataset.loader === "playing") root.dataset.loader = "skip";
+    root.dataset.loader = "skip";
+    root.dataset.intro = "color";
+    root.style.setProperty("--intro-hold", "0ms");
+    root.style.setProperty("--intro-shift", "0ms");
+
+    // nav items sometimes get stuck hidden on SPA nav, so just force them visible
+    document.querySelectorAll<HTMLElement>(".nav-item").forEach((el) => {
+      el.style.opacity = "1";
+      el.style.animation = "none";
+      el.style.transform = "none";
+    });
+  }, [pathname]);
+
+  useEffect(() => {
     let cleanupLenis: (() => void) | undefined;
 
     const apply = (_y: number) => {
-      // Only hide when the fixed header actually overlaps the footer.
-      const footer = document.querySelector("footer");
+      // only hide if header is actually on top of the footer
+      // skip footers from hidden Activity pages
+      const footer = Array.from(document.querySelectorAll("footer")).find(
+        (f) => f.getClientRects().length > 0,
+      );
       if (!footer) {
         setHidden(false);
         return;
@@ -43,7 +58,7 @@ export function SiteHeader() {
 
     attachLenis();
     window.addEventListener("scroll", onScroll, { passive: true });
-    // Lenis is created after mount in SmoothScroll; poll briefly to attach.
+    // lenis shows up after mount, so just poll a bit
     const poll = window.setInterval(() => {
       attachLenis();
       if (cleanupLenis) window.clearInterval(poll);
@@ -51,8 +66,7 @@ export function SiteHeader() {
     const stopPoll = window.setTimeout(() => window.clearInterval(poll), 4000);
 
     apply(current());
-    // After a route change the new page mounts, then Next / SmoothScroll reset the scroll a tick
-    // later. Re-read the real position a few times so the header never keeps a stale state.
+    // recheck a few times after route change, scroll settles a bit late sometimes
     const settle = [0, 120, 400, 900].map((ms) => window.setTimeout(() => apply(current()), ms));
 
     return () => {

@@ -1,2 +1,2 @@
 export { ContactSection } from "./contact-section";
-export { ContactFooter } from "./contact-footer";
+export { ContactFooter } from "./components/contact-footer";

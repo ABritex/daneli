@@ -2,27 +2,14 @@
 
 import { useCallback } from "react";
 import { useWorkTransition, type Work } from "@/features/works";
-import { FeaturedTitle } from "./featured-title";
-import { WorkCard } from "./work-card";
-import { useWorkScene } from "./use-work-scene";
+import { FeaturedTitle } from "./components/featured-title";
+import { WorkCard } from "./components/work-card";
+import { useWorkScene } from "./hooks/use-work-scene";
 
-/**
- * Featured works.
- *  - every card is the same size, on an even 2-column grid
- *  - the videos are drawn on ONE shared fixed canvas with a perspective camera
- *  - scroll velocity runs through a spring: cards bow, shear and tilt along one
- *    continuous curve, then settle with a little overshoot
- *  - cards grow in from a slightly smaller size as they enter the viewport (scroll linked)
- *  - hover only animates the picture INSIDE the card (zoom + cursor drift) - the card never moves
- *  - all smoothing is time-based, so it feels the same at 60 / 120 / 144 Hz
- *  - heavy work (WebGL, video loading) starts only after the loader finishes
- *  - if WebGL is unavailable the plain <video> elements are shown instead
- */
 export function FeaturedWorks({ works }: { works: Work[] }) {
   const { rootRef, canvasRef } = useWorkScene();
   const { open } = useWorkTransition();
 
-  /* Card click -> morph to fullscreen -> route push (see work-transition.tsx) */
   const handleCardClick = useCallback(
     (e: React.MouseEvent, work: Work) => {
       e.preventDefault();
@@ -37,7 +24,6 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
 
   return (
     <section id="work" ref={rootRef} className="px-8 pb-24 pt-24 md:px-12 md:pt-28">
-      {/* one shared canvas: sits above the page, below the header (z-40) */}
       <canvas
         ref={canvasRef}
         aria-hidden="true"
@@ -46,13 +32,7 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
       <div data-head className="mb-14 md:mb-20">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-9">
-            <p
-              aria-hidden="true"
-              className="mb-2 text-[clamp(4.5rem,16vw,14rem)] font-black leading-[0.82] tracking-[-0.06em] text-foreground/[0.06]"
-            >
-              03
-            </p>
-            <div className="[&_h1]:text-[clamp(3.5rem,11vw,9.5rem)] [&_h1]:font-black [&_h1]:leading-[0.88] [&_h1]:tracking-[-0.055em] [&_h2]:text-[clamp(3.5rem,11vw,9.5rem)] [&_h2]:font-black [&_h2]:leading-[0.88] [&_h2]:tracking-[-0.055em] [&_p]:text-[clamp(3.5rem,11vw,9.5rem)] [&_p]:font-black [&_p]:leading-[0.88] [&_p]:tracking-[-0.055em] [&_span]:text-[clamp(3.5rem,11vw,9.5rem)] [&_span]:font-black [&_span]:leading-[0.88] [&_span]:tracking-[-0.055em]">
+            <div className="[&_*]:font-monument [&_*]:text-[clamp(2.4rem,8.6vw,8rem)] [&_*]:font-extrabold [&_*]:uppercase [&_*]:leading-[0.95] [&_*]:tracking-normal">
               <FeaturedTitle text="Featured Work" variant="reveal" />
             </div>
           </div>
@@ -61,7 +41,7 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
             <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/45">
               Studio / Selection
             </p>
-            <p className="mt-4 max-w-[18ch] text-xl font-bold leading-[1.05] tracking-[-0.03em] text-foreground md:text-2xl">
+            <p className="mt-4 max-w-[18ch] text-xl font-bold leading-[1.05] tracking-normal text-foreground md:text-2xl">
               A selection of immersive digital experiences created for ambitious brands and forward
               thinking teams.
             </p>

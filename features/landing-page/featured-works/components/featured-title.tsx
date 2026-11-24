@@ -71,13 +71,13 @@ export function FeaturedTitle({
   }, [text]);
 
   return (
-    <div className={`relative inline-block ${className}`}>
+    <div className={`relative inline-block font-monument uppercase ${className}`}>
       {/* Word-by-word scroll reveal with scale + blur */}
       {showReveal && (
         <TextGenerateEffect
           ref={revealRef}
           words={text}
-          className="relative z-10 text-foreground font-bold tracking-tight"
+          className="relative z-10 font-monument font-bold tracking-normal text-foreground"
           filter={true}
           duration={0.6}
         />
@@ -85,7 +85,7 @@ export function FeaturedTitle({
 
       {/* Wave: letters undulate vertically on scroll */}
       {showWave && (
-        <div className="relative z-10 text-foreground font-bold tracking-tight">
+        <div className="relative z-10 font-monument font-bold tracking-normal text-foreground">
           {words.map((word, wi) => (
             <span key={`wave-w-${wi}`} className="inline-block whitespace-nowrap">
               {word.split("").map((letter, li) => (
@@ -105,7 +105,7 @@ export function FeaturedTitle({
 
       {/* Scramble: letters randomize then resolve on hover */}
       {showScramble && (
-        <div className="relative z-10 text-foreground font-bold tracking-tight group">
+        <div className="relative z-10 font-monument font-bold tracking-normal text-foreground group">
           {words.map((word, wi) => (
             <span key={`scram-w-${wi}`} className="inline-block whitespace-nowrap">
               {word.split("").map((letter, li) => (
@@ -139,7 +139,7 @@ export function FeaturedTitle({
 
       {/* Blur: text sharpens as it comes into view */}
       {showBlur && (
-        <div className="relative z-10 text-foreground font-bold tracking-tight">
+        <div className="relative z-10 font-monument font-bold tracking-normal text-foreground">
           {words.map((word, wi) => (
             <span key={`blur-w-${wi}`} className="inline-block whitespace-nowrap">
               {word.split("").map((letter, li) => (

@@ -15,11 +15,9 @@ const isWork = (p: string) => p.startsWith("/work/");
 const WHEEL_LERP = 0.065; /* mouse wheel / trackpad inertia: lower = floatier */
 const ANCHOR_OFFSET = -24; /* px above the section when jumping to it */
 
-/** slow start, fast middle, slow landing (ease in AND out) */
 const easeInOutQuint = (t: number) =>
   t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 
-/** longer trips take longer, but never feel rushed or endless (2.0s .. 4.2s) */
 const anchorDuration = (distance: number) =>
   Math.min(4.2, Math.max(2.0, 1.4 + Math.sqrt(distance) / 20));
 
@@ -61,14 +59,41 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
        a second request for the same spot while a glide is running is ignored,
        so two triggers (click + a router scroll) can't restart the ease */
     let lastGlide = { y: -1, until: 0 };
+    let glide: gsap.core.Tween | null = null;
     const glideTo = (y: number) => {
       const now = performance.now();
       if (Math.abs(y - lastGlide.y) < 4 && now < lastGlide.until) return;
-      const duration = anchorDuration(Math.abs(y - lenis.scroll));
+      const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const to = Math.max(0, Math.min(max, y));
+      const from = lenis.scroll;
+      const duration = anchorDuration(Math.abs(to - from));
       lastGlide = { y, until: now + duration * 1000 };
       lenis.start();
-      lenis.scrollTo(y, { duration, easing: easeInOutQuint, force: true });
+      // GSAP owns the animation, Lenis only receives the position each frame.
+      // (lenis.scrollTo({ duration, easing }) can silently fall back to an instant
+      // jump or its lerp when the constructor has `lerp` set, so we don't rely on it)
+      glide?.kill();
+      const state = { y: from };
+      glide = gsap.to(state, {
+        y: to,
+        duration,
+        ease: easeInOutQuint,
+        overwrite: true,
+        onUpdate: () => lenis.scrollTo(state.y, { immediate: true, force: true }),
+        onComplete: () => {
+          glide = null;
+        },
+      });
     };
+    // the user grabbing the wheel / touch / keys cancels a running glide
+    const cancelGlide = () => {
+      glide?.kill();
+      glide = null;
+      lastGlide = { y: -1, until: 0 };
+    };
+    window.addEventListener("wheel", cancelGlide, { passive: true });
+    window.addEventListener("touchstart", cancelGlide, { passive: true });
+    window.addEventListener("keydown", cancelGlide);
 
     const scrollToSection: ScrollToSection = (rawId) => {
       const id = rawId.replace(/^\/?#/, "");
@@ -147,6 +172,10 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     return () => {
       document.removeEventListener("click", onClick, { capture: true });
+      window.removeEventListener("wheel", cancelGlide);
+      window.removeEventListener("touchstart", cancelGlide);
+      window.removeEventListener("keydown", cancelGlide);
+      glide?.kill();
       Element.prototype.scrollIntoView = nativeScrollIntoView;
       gsap.ticker.remove(update);
       window.removeEventListener("daneli-loader-done", sync);
@@ -172,14 +201,9 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
           if (window.location.hash) {
             const hashId = window.location.hash.replace(/^#/, "");
             const el = hashId ? document.getElementById(hashId) : null;
-            if (el) {
-              lenis.scrollTo(el, {
-                offset: ANCHOR_OFFSET,
-                duration: 1.8,
-                easing: easeInOutQuint,
-                force: true,
-              });
-            } else lenis.scrollTo(0, { immediate: true, force: true });
+            const go = (window as unknown as { __scrollToSection?: ScrollToSection }).__scrollToSection;
+            if (el && go) go(hashId);
+            else lenis.scrollTo(0, { immediate: true, force: true });
           } else {
             lenis.scrollTo(0, { immediate: true, force: true });
           }

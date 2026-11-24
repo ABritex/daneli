@@ -4,29 +4,19 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { usePathname, useRouter } from "next/navigation";
 import { gsap } from "gsap";
 
-/**
- * Card <-> page morph (Lusion style).
- *
- *  open : the card grows to fill the viewport, the picture dissolves into the page colour,
- *         the route is pushed WHILE the dissolve is still running, and once the overlay starts
- *         fading the page content fades up (see whenWorkRevealed).
- *  close: the page content fades out, the page colour shrinks back into the card while the
- *         picture dissolves back in, then the real card takes over.
- */
+// card <-> page morph. open grows the card to fullscreen and fades into the page,
+// close shrinks it back into the card.
 
-/** page colour the card dissolves into. Must equal the slug page background. */
-export const PAGE_BG = "#070707";
-/** the attribute every slug-page element that should fade in / out carries */
+export const PAGE_BG = "#070707"; // keep same as slug page bg
 export const FADE_ATTR = "data-work-fade";
+
+const OVERLAY_Z = "39"; // above card canvas, below site header
 
 const REVEAL_EVENT = "work:reveal";
 const PAUSE_EVENT = "work:pause"; // WarpedCard listens: detail=true stops rendering/decoding
 const PUSH_AT = 1; // seconds into the open timeline when the route is pushed
 
-/**
- * Slug page calls this to start its entrance. If an opening overlay is still covering the page it
- * waits for the overlay to start fading; on a direct visit / refresh it runs immediately.
- */
+// slug page waits for the overlay to fade before starting its entrance
 export function whenWorkRevealed(cb: () => void): () => void {
   if (!document.querySelector("[data-work-overlay]:not([data-revealed])")) {
     cb();
@@ -110,7 +100,7 @@ function makeOverlay(
     borderRadius: radius,
     overflow: "hidden",
     isolation: "isolate", // keeps rounded clipping correct on the promoted child layer (Safari)
-    zIndex: "9999",
+    zIndex: OVERLAY_Z,
     background: PAGE_BG,
     pointerEvents: "none",
     contain: "layout paint",
@@ -174,6 +164,14 @@ const videoReady = (media: HTMLElement, maxMs: number) =>
 // the home page things that fade away while a card opens
 const HOME_FADE = "#work [data-head], #work [data-rule], #work [data-meta], #work h3, #work canvas";
 
+// same as HOME_FADE but the card canvas stays: it zooms past instead of fading (see open)
+const HOME_FADE_OPEN = "#work [data-head], #work [data-rule], #work [data-meta], #work h3";
+const cardCanvas = () => document.querySelector<HTMLElement>("#work canvas");
+const resetCanvasZoom = () => {
+  const c = cardCanvas();
+  if (c) gsap.set(c, { clearProps: "transform,transformOrigin" });
+};
+
 // the four fixed site-frame lines (see NavFrameLines)
 const FRAME_LINES = "[data-frame-line]";
 
@@ -187,7 +185,6 @@ const hideFrameLines = () => {
   gsap.to(FRAME_LINES, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
 };
 
-/** Replays the site's line draw-in on the fixed frame lines (same look as GridReplay). */
 const drawFrameLines = () => {
   const xs = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-x`));
   const ys = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-y`));
@@ -227,16 +224,11 @@ const drawFrameLines = () => {
   }
 };
 
-/**
- * Next 16 keeps visited pages mounted with React <Activity> (see
- * app/guides/preserving-ui-state). An abandoned card -> page morph therefore
- * leaves its transient state on the hidden home page: the clicked card still
- * carries data-transitioning, its media is hidden and the scene/content was
- * faded out. Clear it so the preserved home page renders again when shown.
- */
+// next 16 keeps visited pages mounted, so clean up any leftover transition state
 const resetHomeState = () => {
   gsap.killTweensOf(HOME_FADE);
   gsap.set(HOME_FADE, { opacity: 1 });
+  resetCanvasZoom();
   document
     .querySelectorAll<HTMLElement>("[data-work][data-transitioning]")
     .forEach((card) => card.removeAttribute("data-transitioning"));
@@ -316,14 +308,51 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
 
       // stop the 10 WebGL planes + their video decoders: the overlay covers them anyway
       pauseCards(true);
-      gsap.to(HOME_FADE, { opacity: 0, duration: 0.45, ease: "power2.out", overwrite: true });
+      gsap.to(HOME_FADE_OPEN, { opacity: 0, duration: 0.45, ease: "power2.out", overwrite: true });
 
       const tl = gsap.timeline({ defaults: { overwrite: "auto" } });
       tl.to(ov.el, { ...fullRect(), borderRadius: 0, duration: 1, ease: "power4.inOut" }, 0)
         .to(ov.layer, { scale: 1.12, duration: 1, ease: "power4.inOut" }, 0)
+        // a little tilt that settles flat as the card fills the screen
+        .to(
+          ov.el,
+          {
+            keyframes: [
+              { rotation: -1.8, duration: 0.45, ease: "power2.out" },
+              { rotation: 0, duration: 0.55, ease: "power2.inOut" },
+            ],
+          },
+          0,
+        )
+        // motion blur that builds, then clears
+        .to(
+          ov.layer,
+          {
+            keyframes: [
+              { filter: "blur(9px)", duration: 0.4, ease: "power2.in" },
+              { filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
+            ],
+          },
+          0.15,
+        )
         .to(ov.layer, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.7)
         // push while the dissolve is still running instead of waiting for the end
         .call(() => router.push(href, { scroll: false }), undefined, PUSH_AT);
+
+      // the other cards (drawn on the shared canvas) zoom away from the clicked card
+      const gl = cardCanvas();
+      if (gl) {
+        tl.to(
+          gl,
+          {
+            scale: 1.3,
+            transformOrigin: `${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px`,
+            duration: 1,
+            ease: "power4.inOut",
+          },
+          0,
+        );
+      }
 
       last.current = { slug, poster, video, scrollY: window.scrollY, overlay: ov, tl };
     },
@@ -363,6 +392,7 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
     if (pathname.startsWith("/work/")) {
       setScroll(0);
       const ov = l?.overlay;
+      resetCanvasZoom();
       if (!ov) {
         drawFrameLines();
         unlock();

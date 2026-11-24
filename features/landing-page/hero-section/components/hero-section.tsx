@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { EXIT_BAND, EXIT_TRAVEL, HERO_MARKER_VH, STAGE_VH, VIGNETTE } from "./config";
-import { useHeroSection } from "./use-hero-section";
+import { EXIT_BAND, EXIT_TRAVEL, HERO_MARKER_VH, STAGE_VH, VIGNETTE } from "../config/config";
+import { ReelsVideo } from "./reels-video";
+import { useHeroSection } from "../hooks/use-hero-section";
 
 export function HeroSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,6 +13,7 @@ export function HeroSection() {
   const heroMetaRef = useRef<HTMLDivElement>(null);
   const reelsHeadingRef = useRef<HTMLDivElement>(null);
   const reelsMetaRef = useRef<HTMLDivElement>(null);
+  const reelsVideoRef = useRef<HTMLDivElement>(null);
   const vignetteRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLDivElement>(null);
 
@@ -23,6 +25,7 @@ export function HeroSection() {
     heroMetaRef,
     reelsHeadingRef,
     reelsMetaRef,
+    reelsVideoRef,
     vignetteRef,
     exitRef,
   });
@@ -40,7 +43,7 @@ export function HeroSection() {
           >
             DANELI
           </h1>
-          <p className="absolute left-1/2 top-[calc(50%+clamp(2.8rem,8vw,11rem))] -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.42em] text-foreground/60">
+          <p className="absolute left-1/2 top-[calc(50%+clamp(2.8rem,8vw,11rem))] -translate-x-1/2 font-screener text-[10px] uppercase tracking-[0.42em] text-foreground/60">
             Scroll to explore
           </p>
         </div>
@@ -76,9 +79,11 @@ export function HeroSection() {
           aria-hidden="true"
         />
 
+        <ReelsVideo frameRef={reelsVideoRef} />
+
         <div
           ref={heroMetaRef}
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between px-8 pb-6 font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/50 md:px-12"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between px-8 pb-6 font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50 md:px-12"
         >
           <span>01 / Hero</span>
           <span>Infinite spiral</span>
@@ -86,7 +91,7 @@ export function HeroSection() {
 
         <div
           ref={reelsHeadingRef}
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-8 pb-6 font-mono uppercase tracking-[0.32em] text-foreground mix-blend-difference md:px-12"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-8 pb-6 font-screener uppercase tracking-[0.32em] text-foreground mix-blend-difference md:px-12"
           style={{ opacity: 0 }}
         >
           <h2
@@ -100,7 +105,7 @@ export function HeroSection() {
 
         <div
           ref={reelsMetaRef}
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between px-8 pt-6 font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/50 md:px-12"
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between px-8 pt-6 font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50 md:px-12"
           style={{ opacity: 0 }}
         >
           <span>Scroll to drift</span>

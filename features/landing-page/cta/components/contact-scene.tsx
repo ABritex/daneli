@@ -8,13 +8,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* each sphere travels on its own tilted orbit around the centre (the headline).
-   radius  : size of the orbit (world units)
-   speed   : revolutions, in radians per second (negative = the other way round)
-   phase   : where on the orbit it starts
-   tilt    : [tiltX, tiltZ] of the orbit plane
-   r       : sphere radius
-   spin    : how fast the sphere itself turns */
 const SPHERES = [
   { radius: 4.4, speed: 0.2, phase: 0, tilt: [0.35, 0.18], r: 0.95, spin: [0.22, 0.31] },
   { radius: 4.4, speed: 0.2, phase: Math.PI, tilt: [0.35, 0.18], r: 0.75, spin: [-0.18, 0.26] },
@@ -24,13 +17,11 @@ const SPHERES = [
   { radius: 3.2, speed: 0.3, phase: 2.2 + Math.PI, tilt: [0.6, -0.1], r: 0.65, spin: [0.2, 0.28] },
 ] as const;
 
-/** a unit sphere with a gentle lumpy surface, so it reads as a stone while still being a sphere.
-    replace this with a GLTF rock later and keep everything else as is */
 function createRockGeometry() {
   let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(1, 5);
   geo.deleteAttribute("normal");
   geo.deleteAttribute("uv");
-  geo = mergeVertices(geo, 1e-4); /* shared vertices -> smooth normals, no seams */
+  geo = mergeVertices(geo, 1e-4);
 
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const v = new THREE.Vector3();
@@ -46,7 +37,6 @@ function createRockGeometry() {
   return geo;
 }
 
-/** the 3D background of the contact section: dark stones orbiting the centre */
 export function ContactScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -59,8 +49,9 @@ export function ContactScene() {
     try {
       renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     } catch {
-      return; /* no WebGL: the section simply has no stones */
+      return;
     }
+
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
 
@@ -68,7 +59,6 @@ export function ContactScene() {
     const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
     camera.position.set(0, 0, 14);
 
-    /* light: a soft key from the top left, a dim fill, and a faint rim from behind */
     scene.add(new THREE.AmbientLight(0xffffff, 0.45));
     const key = new THREE.DirectionalLight(0xffffff, 2.6);
     key.position.set(-5, 6, 7);
@@ -88,7 +78,7 @@ export function ContactScene() {
     scene.add(world);
 
     const items = SPHERES.map((s, i) => {
-      const holder = new THREE.Group(); /* orbit position + scroll grow-in */
+      const holder = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, material);
       mesh.scale.setScalar(s.r);
       mesh.rotation.set(i * 1.7, i * 2.3, i * 0.9);
@@ -105,14 +95,13 @@ export function ContactScene() {
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      /* narrow screens: squeeze the orbits sideways so the stones stay in frame */
       spread = Math.min(1, Math.max(0.36, camera.aspect / 1.8));
     };
+
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(host);
 
-    /* parallax: the whole system leans a little toward the cursor */
     const pointer = { x: 0, y: 0 };
     const smooth = { x: 0, y: 0 };
     const onMove = (e: PointerEvent) => {
@@ -121,7 +110,6 @@ export function ContactScene() {
     };
     window.addEventListener("pointermove", onMove);
 
-    /* grow-in tied to scroll, like the cards in featured works */
     const section = host.closest("section") ?? host;
     const grow = gsap.fromTo(
       items.map((it) => it.holder.scale),
@@ -145,7 +133,6 @@ export function ContactScene() {
       },
     );
 
-    /* only draw while the section is on screen */
     let visible = false;
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
@@ -156,6 +143,7 @@ export function ContactScene() {
     let frame = 0;
     let last = performance.now();
     let time = 0;
+
     const render = (now: number) => {
       frame = requestAnimationFrame(render);
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -171,18 +159,19 @@ export function ContactScene() {
 
       for (const it of items) {
         const { s } = it;
-        /* ellipse in the orbit plane (flatter in depth), then tilt the plane */
         const a = s.phase + time * s.speed;
         v.set(Math.cos(a) * s.radius * spread, 0, Math.sin(a) * s.radius * 0.6);
         v.applyEuler(it.tilt);
-        v.y += Math.sin(time * 0.7 + it.i * 1.3) * 0.12; /* tiny bob on top of the orbit */
+        v.y += Math.sin(time * 0.7 + it.i * 1.3) * 0.12;
         it.holder.position.copy(v);
 
         it.mesh.rotation.x += dt * s.spin[0];
         it.mesh.rotation.y += dt * s.spin[1];
       }
+
       renderer.render(scene, camera);
     };
+
     frame = requestAnimationFrame(render);
 
     return () => {

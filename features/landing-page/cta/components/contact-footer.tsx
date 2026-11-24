@@ -1,41 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-/* edit these three */
-export const CONTACT_EMAIL = "hello@yourdomain.com";
-const TIMEZONE = "Asia/Manila";
-const TIMEZONE_LABEL = "PHT";
+import { CONTACT_EMAIL, TIMEZONE_LABEL } from "../config";
+import { useLocalTime } from "../hooks/use-local-time";
 
 type LenisLike = { scrollTo: (target: number, opts?: { duration?: number }) => void };
 
 function ArrowUp() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
       <path d="M12 20V4M5 11l7-7 7 7" strokeLinecap="square" />
     </svg>
   );
 }
 
-/** minimal mono footer: back-to-top, contact line, live time, credit */
 export function ContactFooter() {
-  const [time, setTime] = useState("");
-  const [year, setYear] = useState("2026");
-
-  useEffect(() => {
-    const fmt = new Intl.DateTimeFormat("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: TIMEZONE,
-    });
-    const tick = () => setTime(fmt.format(new Date()));
-    tick();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- year is derived client-side to avoid prerender time instability
-    setYear(String(new Date().getFullYear()));
-    const id = window.setInterval(tick, 15000);
-    return () => window.clearInterval(id);
-  }, []);
+  const { time, year } = useLocalTime();
 
   const toTop = () => {
     const lenis = (window as unknown as { __lenis?: LenisLike }).__lenis;

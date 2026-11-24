@@ -1,18 +1,33 @@
 export const EXPERIENCE = [
-  { role: "Creative Director", company: "DanEli Studio", period: "2023 — Present", desc: "Leading design and engineering for immersive digital experiences. Directing brand identity, web, and 3D projects for global clients." },
-  { role: "Senior Designer", company: "Freelance", period: "2021 — 2023", desc: "Independent design and development practice. Specialised in Swiss typography, WebGL interfaces, and motion design." },
-  { role: "Junior Designer", company: "Design Agency", period: "2019 — 2021", desc: "Collaborated on brand systems, web layouts, and print campaigns for enterprise clients." },
+  {
+    role: "Lorem Ipsum Designer",
+    company: "Lorem Studio",
+    period: "2024 — Present",
+    desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+  },
+  {
+    role: "Dolor Sit Amet",
+    company: "Ipsum Agency",
+    period: "2022 — 2024",
+    desc: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+  },
+  {
+    role: "Consectetur Creative",
+    company: "Freelance",
+    period: "2020 — 2022",
+    desc: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+  },
 ];
 
 export const SKILLS = [
-  { cat: "Design", items: ["Brand Identity", "Typography", "UI/UX", "Motion"] },
-  { cat: "Development", items: ["React / Next.js", "Three.js / WebGL", "GSAP", "TypeScript"] },
-  { cat: "Tools", items: ["Figma", "Blender", "After Effects", "Git"] },
+  { cat: "Design", items: ["Lorem Ipsum", "Dolor Sit", "Amet Consectetur", "Adipiscing Elit"] },
+  { cat: "Development", items: ["Next.js", "TypeScript", "Three.js", "GSAP"] },
+  { cat: "Tools", items: ["Figma", "Blender", "After Effects", "Lorem Tool"] },
 ];
 
 export const EDUCATION = {
-  degree: "Bachelor of Design",
-  period: "2015 — 2019",
-  school: "University of Design",
-  desc: "Visual communication, typography, and interaction design. Graduated with honours.",
+  degree: "Bachelor of Lorem Ipsum",
+  period: "2016 — 2020",
+  school: "University of Dolor Sit Amet",
+  desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
 };

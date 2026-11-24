@@ -4,15 +4,14 @@ import { AboutSection } from "./about";
 import { ContactSection } from "./cta";
 import { FeaturedWorks } from "./featured-works";
 import { HeroSection } from "./hero-section";
+import { SectionCorners } from "./section-corners";
 import { ServicesSection } from "./services";
 
-/**
- * Landing page: spiral hero → drift wall reels → featured works → about → services → contact.
- */
 export function LandingPage() {
   return (
     <main className="relative text-foreground">
       <ScrollPill />
+      <SectionCorners />
       <div data-intro-fade>
         <HeroSection />
         <FeaturedWorks works={works} />

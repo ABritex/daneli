@@ -1,47 +1,57 @@
 export function ContactForm() {
   return (
-    <section className="px-8 py-20 md:px-16 lg:px-24">
-      <div className="mx-auto max-w-[1240px]">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
-          <div className="md:col-span-3">
-            <span className="text-xs uppercase tracking-[0.3em] opacity-50">Send a message</span>
-          </div>
-          <div className="md:col-span-9 max-w-2xl">
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <label className="block text-xs uppercase tracking-[0.3em] opacity-50 mb-2">Name</label>
-                  <input
-                    type="text"
-                    className="w-full border-b border-foreground/30 bg-transparent py-2 text-base focus:border-foreground focus:outline-none transition-colors"
-                    placeholder="Your name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs uppercase tracking-[0.3em] opacity-50 mb-2">Email</label>
-                  <input
-                    type="email"
-                    className="w-full border-b border-foreground/30 bg-transparent py-2 text-base focus:border-foreground focus:outline-none transition-colors"
-                    placeholder="your@email.com"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-[0.3em] opacity-50 mb-2">Message</label>
-                <textarea
-                  rows={4}
-                  className="w-full border-b border-foreground/30 bg-transparent py-2 text-base focus:border-foreground focus:outline-none transition-colors resize-none"
-                  placeholder="Tell us about your project"
+    <section className="mx-auto w-full max-w-7xl py-20 md:py-28">
+      <div className="grid grid-cols-1 gap-10 border-t border-foreground/15 pt-8 md:grid-cols-12 md:gap-8">
+        <div className="md:col-span-3">
+          <p className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/45">
+            Send a message
+          </p>
+        </div>
+
+        <div className="md:col-span-9 max-w-2xl">
+          <form className="space-y-8" action="#">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <label className="block">
+                <span className="font-screener text-[10px] uppercase tracking-[0.28em] text-foreground/45">
+                  Name
+                </span>
+                <input
+                  type="text"
+                  className="mt-3 w-full border-b border-foreground/20 bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/60"
+                  placeholder="Lorem ipsum"
                 />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.5em] font-medium border border-foreground px-6 py-3 hover:bg-foreground hover:text-background transition-colors"
-              >
-                Send message →
-              </button>
-            </form>
-          </div>
+              </label>
+
+              <label className="block">
+                <span className="font-screener text-[10px] uppercase tracking-[0.28em] text-foreground/45">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  className="mt-3 w-full border-b border-foreground/20 bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/60"
+                  placeholder="lorem@ipsum.com"
+                />
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="font-screener text-[10px] uppercase tracking-[0.28em] text-foreground/45">
+                Message
+              </span>
+              <textarea
+                rows={5}
+                className="mt-3 w-full resize-none border-b border-foreground/20 bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/60"
+                placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-[16px] border border-foreground/30 px-6 py-3 font-screener text-[10px] uppercase tracking-[0.28em] text-foreground transition-colors hover:bg-foreground hover:text-background"
+            >
+              Send message
+            </button>
+          </form>
         </div>
       </div>
     </section>

@@ -17,7 +17,6 @@ function ArrowUp() {
   );
 }
 
-/** minimal mono footer: back-to-top, contact line, live time, credit */
 export function ContactFooter() {
   const [time, setTime] = useState("");
   const [year, setYear] = useState("2026");

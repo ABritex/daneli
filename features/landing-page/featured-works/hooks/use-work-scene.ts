@@ -5,210 +5,36 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import * as THREE from "three";
 import { clamp, damp, scrambleCardTags } from "@/lib/animations";
+import {
+  CAM_DIST,
+  CARD_RADIUS,
+  ENTER_RANGE,
+  ENTER_SCALE,
+  ENTER_SMOOTH,
+  IGNORE_REDUCED_MOTION,
+  IN_END,
+  IN_RISE,
+  IN_START,
+  OUT_END,
+  OUT_LIFT,
+  OUT_START,
+  SCALE_FROM_TOP,
+} from "../config/scene";
+import { onLoaderReady } from "../lib/on-loader-ready";
+import { fragmentShader, vertexShader } from "../lib/work-scene-shaders";
 
 gsap.registerPlugin(ScrollTrigger);
-
-/** keep the scroll curve even when the OS asks for reduced motion */
-const IGNORE_REDUCED_MOTION = true;
-/** where the curve's centre line sits, as a fraction of viewport height (0.5 = middle) */
-const CURVE_CENTER = 0.54;
-/** how far the top / bottom of the viewport is pulled toward the camera at full speed, as a fraction of viewport height */
-const CURVE_DEPTH = 0.08;
-/** how quickly the bend saturates with scroll speed (higher = reaches full bend sooner) */
-const CURVE_SATURATE = 2.6;
-/** vertical tilt while scrolling: how far the outer corners of a card drop (fraction of viewport height) */
-const TILT = 0.024;
-/** tilt strength for cards in the lower half of the screen, relative to the upper half (they tilt the other way) */
-const TILT_LOWER = 0.35;
-/** tilt strength when scrolling UP, relative to scrolling down (0 = no tilt going up) */
-const TILT_UP = 0.5;
-/** prism: how far red and blue are pulled apart at full scroll speed (fraction of the video frame) */
-const PRISM = 0.012;
-/** motion blur: how far the picture smears along the scroll direction at full speed (fraction of video height) */
-const MOTION_BLUR = 0.04;
-/** entrance: cards start this fraction of their size and grow to 100% as they enter the viewport */
-const ENTER_SCALE = 0.88;
-/** entrance: how much of the viewport height the grow-in takes, measured from the bottom edge */
-const ENTER_RANGE = 0.42;
-/** also scale cards at the TOP edge, so scrolling up grows them in the same way (false = only from the bottom) */
-const SCALE_FROM_TOP = true;
-/** entrance: smoothing rate (lower = softer / more floaty) */
-const ENTER_SMOOTH = 7;
-/** hover: how much the picture zooms inside the card (the card itself never moves) */
-const HOVER_ZOOM = 0.08;
-/** hover: how far the picture drifts with the cursor inside the card (uv units) */
-const HOVER_DRIFT = 0.03;
-/** corner radius of the cards, in CSS px */
-const CARD_RADIUS = 14;
-
-/* ------------------------------------------------------------------ */
-/* Shaders                                                             */
-/* ------------------------------------------------------------------ */
-
-// The camera is a real perspective camera set up so 1 world unit = 1 CSS px
-// on the z = 0 plane.
-//
-// ONE continuous curve, fixed in SCREEN space (not per card): a parabola whose
-// centre line sits near the middle of the viewport. Cards slide through it, so a
-// row in the upper half rides one side of the curve and the next row rides the
-// other side - the same bend carries on from row to row with no per-card reset.
-// Points on the centre line stay put; points toward the top and bottom of the
-// viewport are pulled toward the camera, so the sides of every card flare.
-//
-// uVel is the smoothed scroll speed (0 at rest). The bend grows with speed,
-// saturates at high speed. The flare is the same for both scroll directions;
-// the tilt (see TILT below) follows the direction.
-const vertexShader = /* glsl */ `
-  uniform float uVel;
-  uniform vec2  uViewport;  // css px
-  uniform float uAmp;       // 0 when reduced motion is on
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    vec4 wp = modelMatrix * vec4(position, 1.0);
-
-    float screenY = uViewport.y * 0.5 - wp.y;                 // px from top of viewport
-    float dyn = (screenY - uViewport.y * ROLLER) / (uViewport.y * 0.5); // -1 top .. +1 bottom
-
-    float amt = uAmp * (1.0 - exp(-SATURATE * abs(uVel)));    // 0 .. 1
-    wp.z += amt * uViewport.y * DEPTH * dyn * dyn;
-
-    // TILT: cards ride a wave while scrolling. In the upper part of the screen the
-    // outer corners drop below the inner ones, so each card leans toward the centre
-    // gutter (left and right cards mirror each other). The lower half does the
-    // opposite, more gently. It follows scroll direction: scrolling up eases it back.
-    float xn = wp.x / (uViewport.x * 0.5);                    // -1 left .. +1 right
-    float dc = clamp(dyn, -1.0, 1.0);
-    float wave = dc < 0.0 ? 4.0 * (-dc) * (1.0 + dc)          // peaks halfway up the top half
-                          : -__TILT_LOW__ * 4.0 * dc * (1.0 - dc);
-    float dir = uVel >= 0.0 ? 1.0 : -__TILT_UP__;
-    wp.y -= dir * amt * uViewport.y * __TILT__ * wave * xn * xn;
-
-    gl_Position = projectionMatrix * viewMatrix * wp;
-  }
-`
-  .replace(/ROLLER/g, CURVE_CENTER.toFixed(3))
-  .replace(/SATURATE/g, CURVE_SATURATE.toFixed(2))
-  .replace(/DEPTH/g, CURVE_DEPTH.toFixed(4))
-  .replace(/__TILT_LOW__/g, TILT_LOWER.toFixed(3))
-  .replace(/__TILT_UP__/g, TILT_UP.toFixed(3))
-  .replace(/__TILT__/g, TILT.toFixed(4));
-
-const fragmentShader = /* glsl */ `
-  precision highp float;
-  uniform sampler2D uTex;
-  uniform vec2 uUvScale;   // "object-fit: cover" crop
-  uniform float uFade;     // 0 -> 1 entrance fade
-  uniform float uHover;    // 0 -> 1 hover amount (eased in JS)
-  uniform vec2  uMouse;    // -1..1 cursor position inside the card
-  uniform float uPar;      // -1..1 parallax position
-  uniform float uVel;      // scroll velocity (signed)
-  uniform float uAmp;      // 0 when reduced motion is on
-  uniform vec2 uSize;      // card size in css px
-  uniform float uRadius;   // corner radius in css px
-  varying vec2 vUv;
-
-  void main() {
-    // rounded-rect signed distance, anti-aliased over ~1px
-    vec2 p = (vUv - 0.5) * uSize;
-    vec2 q = abs(p) - (uSize * 0.5 - uRadius);
-    float sdf = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
-    float edge = 1.0 - smoothstep(-1.0, 0.5, sdf);
-    if (edge < 0.01) discard;
-
-    vec2 uv = (vUv - 0.5) * uUvScale;
-    uv *= 0.86 - uHover * __HZOOM__;   // zoom a little so parallax never shows an edge; hover zooms in more
-    uv.y += uPar * 0.06;
-    uv += vec2(uMouse.x, -uMouse.y) * __HDRIFT__ * uHover;   // picture drifts with the cursor, card stays put
-    uv += 0.5;
-
-    // 0 at rest (one crisp sample), up to 1 at full scroll speed
-    float fx = uAmp * (1.0 - exp(-__SAT__ * abs(uVel)));
-    float dir = uVel >= 0.0 ? 1.0 : -1.0;
-
-    vec3 col;
-    if (fx < 0.01) {
-      col = texture2D(uTex, uv).rgb;
-    } else {
-      // prism: red and blue are pulled apart along the scroll direction and a little
-      // outward from the card centre, so the fringes fan out toward the edges
-      vec2 c = vUv - 0.5;
-      vec2 split = vec2(c.x * 0.8, dir * 0.6 + c.y * 0.6) * fx * __PRISM__;
-
-      // motion blur: soft taps spread along the scroll direction
-      vec3 acc = vec3(0.0);
-      float wsum = 0.0;
-      for (int i = 0; i < 9; i++) {
-        float t = float(i) / 4.0 - 1.0;            // -1 .. 1
-        float w = exp(-t * t * 2.2);
-        vec2 o = vec2(0.0, t * fx * __BLUR__);
-        acc.r += w * texture2D(uTex, uv + o + split).r;
-        acc.g += w * texture2D(uTex, uv + o).g;
-        acc.b += w * texture2D(uTex, uv + o - split).b;
-        wsum += w;
-      }
-      col = acc / wsum;
-    }
-    gl_FragColor = vec4(col, edge * uFade);
-  }
-`
-  .replace(/__SAT__/g, CURVE_SATURATE.toFixed(2))
-  .replace(/__PRISM__/g, PRISM.toFixed(4))
-  .replace(/__BLUR__/g, MOTION_BLUR.toFixed(4))
-  .replace(/__HZOOM__/g, HOVER_ZOOM.toFixed(4))
-  .replace(/__HDRIFT__/g, HOVER_DRIFT.toFixed(4));
 
 type Plane = {
   el: HTMLElement;
   video: HTMLVideoElement;
   tex: THREE.VideoTexture;
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
-  /** entrance amount 0..1 (scroll linked, smoothed) */
   appear: number | null;
-  /** hover amount + cursor, each eased toward its target every frame */
   hover: { v: number; target: number; mx: number; my: number; tmx: number; tmy: number };
 };
 
-const CAM_DIST = 1200;
-
-/** Runs `cb` once the page loader has finished (or immediately if it never ran). */
-function onLoaderReady(cb: () => void): () => void {
-  const root = document.documentElement;
-  const ready = () => {
-    const s = root.dataset.loader;
-    return !s || s === "done" || s === "skip";
-  };
-  let fired = false;
-  const fire = () => {
-    if (fired || !ready()) return;
-    fired = true;
-    mo.disconnect();
-    window.removeEventListener("daneli-loader-done", fire);
-    cb();
-  };
-  const mo = new MutationObserver(fire);
-  mo.observe(root, { attributes: true, attributeFilter: ["data-loader"] });
-  window.addEventListener("daneli-loader-done", fire);
-  fire();
-  return () => {
-    fired = true;
-    mo.disconnect();
-    window.removeEventListener("daneli-loader-done", fire);
-  };
-}
-
-/**
- * The featured-works scene.
- *  - every card is the same size, on an even 2-column grid
- *  - the videos are drawn on ONE shared fixed canvas with a perspective camera
- *  - scroll velocity runs through a spring: cards bow, shear and tilt along one
- *    continuous curve, then settle with a little overshoot
- *  - cards grow in from a slightly smaller size as they enter the viewport (scroll linked)
- *  - hover only animates the picture INSIDE the card (zoom + cursor drift) - the card never moves
- *  - all smoothing is time-based, so it feels the same at 60 / 120 / 144 Hz
- *  - heavy work (WebGL, video loading) starts only after the loader finishes
- *  - if WebGL is unavailable the plain <video> elements are shown instead
- */
+// main hook for the featured works canvas scene
 export function useWorkScene() {
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -269,6 +95,8 @@ export function useWorkScene() {
       }
 
       const planes: Plane[] = [];
+      /* GSAP fades / moves this wrapper for the section in / out; the canvas planes mirror it below */
+      const sectionBody = root.querySelector<HTMLElement>("[data-section-body]");
       const canHover = window.matchMedia("(hover: hover)").matches;
       let tick: ((time: number, deltaMs: number) => void) | null = null;
       let onResize: (() => void) | null = null;
@@ -370,10 +198,15 @@ export function useWorkScene() {
           spring.x += spring.v * dt;
           const uVel = clamp(spring.x, -1.2, 1.2);
 
+          /* the section in / out fades the whole wrapper with GSAP; the canvas has to fade with it */
+          const bo = sectionBody ? parseFloat(sectionBody.style.opacity) : NaN;
+          const bodyAlpha = Number.isNaN(bo) ? 1 : bo;
+
           for (const p of planes) {
             const r = p.el.getBoundingClientRect();
             const hiddenByTransition = p.el.closest("[data-work]")?.hasAttribute("data-transitioning");
-            const on = !hiddenByTransition && r.bottom > -160 && r.top < vh + 160 && p.video.readyState >= 2;
+            const on =
+              !hiddenByTransition && bodyAlpha > 0.01 && r.bottom > -160 && r.top < vh + 160 && p.video.readyState >= 2;
             p.mesh.visible = on;
             if (!on) continue;
 
@@ -406,7 +239,7 @@ export function useWorkScene() {
             const centre = r.top + r.height / 2 - vh / 2;
             u.uPar.value = clamp(centre / (vh / 2 + r.height / 2), -1, 1);
             u.uVel.value = uVel;
-            u.uFade.value = 0.35 + 0.65 * p.appear;
+            u.uFade.value = (0.35 + 0.65 * p.appear) * bodyAlpha;
             u.uHover.value = h.v;
             (u.uMouse.value as THREE.Vector2).set(h.mx, h.my);
             (u.uViewport.value as THREE.Vector2).set(vw, vh);
@@ -422,6 +255,26 @@ export function useWorkScene() {
       mm.add(
         "(prefers-reduced-motion: no-preference)",
         () => {
+          /* whole-section transition, scrubbed to the scroll position (reverses when you scroll back).
+             IN starts while the hero is still dissolving; OUT overlaps About drawing itself in */
+          if (sectionBody) {
+            gsap
+              .timeline({
+                scrollTrigger: { trigger: root, start: IN_START, end: IN_END, scrub: 1 },
+              })
+              .fromTo(sectionBody, { y: IN_RISE, opacity: 0 }, { y: 0, opacity: 1, ease: "power3.out", duration: 1 });
+
+            gsap
+              .timeline({
+                scrollTrigger: { trigger: root, start: OUT_START, end: OUT_END, scrub: 1 },
+              })
+              .fromTo(
+                sectionBody,
+                { y: 0, opacity: 1 },
+                { y: -OUT_LIFT, opacity: 0, ease: "power2.in", duration: 1, immediateRender: false },
+              );
+          }
+
           gsap.fromTo(
             "[data-rule]",
             { scaleX: 0 },

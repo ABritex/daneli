@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { ART } from "./art";
+import { ART } from "../config/art";
 import {
   ADAPTIVE_DPR,
   AUTO_SPEED,
@@ -54,10 +54,10 @@ import {
   WALL_TILT,
   WALL_TURN,
   WALL_VARIANCE,
-} from "./config";
-import { attachBlur, NO_BLUR, NO_SHAPE, setBlur } from "./material";
-import type { LenisLike, SpiralCard, WallTile } from "./types";
-import { clamp, colFactor, mod, setCover, smooth } from "./utils";
+} from "../config/config";
+import { attachBlur, NO_BLUR, NO_SHAPE, setBlur } from "../lib/material";
+import type { LenisLike, SpiralCard, WallTile } from "../config/types";
+import { clamp, colFactor, mod, setCover, smooth } from "../lib/utils";
 
 type Refs = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -67,6 +67,7 @@ type Refs = {
   heroMetaRef: RefObject<HTMLDivElement | null>;
   reelsHeadingRef: RefObject<HTMLDivElement | null>;
   reelsMetaRef: RefObject<HTMLDivElement | null>;
+  reelsVideoRef: RefObject<HTMLDivElement | null>;
   vignetteRef: RefObject<HTMLDivElement | null>;
   exitRef: RefObject<HTMLDivElement | null>;
 };
@@ -79,6 +80,7 @@ export function useHeroSection({
   heroMetaRef,
   reelsHeadingRef,
   reelsMetaRef,
+  reelsVideoRef,
   vignetteRef,
   exitRef,
 }: Refs) {
@@ -157,6 +159,7 @@ export function useHeroSection({
     let lastCursor = "";
     let spiralIntro = 0; // 0 = hidden/loading, 1 = fully in
     let spiralIntroStart = -1;
+    let assetsReady = false; /* gltf + textures decoded, uploaded to the GPU and shaders compiled */
 
     let morphLock: Array<WallTile | null> | null = null;
     const morphKi = new Float32Array(N);
@@ -205,11 +208,20 @@ export function useHeroSection({
     dirLight.position.set(2, 3, 4);
     scene.add(dirLight);
 
+    /* everything the hero has to wait for. the loader curtain holds until this resolves */
+    (window as unknown as { __heroReady?: boolean }).__heroReady = false;
+    const pending: Promise<void>[] = [];
+
     const gltfLoader = new GLTFLoader();
+    pending.push(
+      new Promise<void>((resolve) => {
     gltfLoader.load(
       "/manniquin/scene.gltf", /* public/manniquin/scene.gltf + scene.bin + textures/ */
       (gltf) => {
-        if (disposed) return;
+        if (disposed) {
+          resolve();
+          return;
+        }
         const obj = gltf.scene;
         obj.traverse((child) => {
           const mesh = child as THREE.Mesh;
@@ -253,11 +265,15 @@ export function useHeroSection({
         mannequin = holder;
         mannequinBaseY = holder.position.y;
         scene.add(holder);
+        resolve();
       },
       undefined,
       (err) => {
+        resolve(); /* never hang the loader on a missing model */
         console.error("[hero] mannequin failed to load (expects /public/manniquin/scene.gltf, scene.bin, textures/):", err);
       },
+    );
+      }),
     );
 
     const loader = new THREE.TextureLoader();
@@ -268,7 +284,17 @@ export function useHeroSection({
       if (!tex) {
         /* upload as soon as the image arrives instead of on the first frame it is drawn
            (that upload landed right in the middle of the morph) */
-        tex = loader.load(src, (t) => renderer?.initTexture(t));
+        let done!: () => void;
+        pending.push(new Promise<void>((r) => { done = r; }));
+        tex = loader.load(
+          src,
+          (t) => {
+            renderer?.initTexture(t);
+            done();
+          },
+          undefined,
+          () => done(),
+        );
         tex.colorSpace = THREE.SRGBColorSpace;
         /* mipmaps: big photos drawn at ~200px were sampled without them (slow + shimmering) */
         tex.generateMipmaps = true;
@@ -299,6 +325,36 @@ export function useHeroSection({
     }
 
     const spiralMeshes = spiralCards.map((c) => c.mesh);
+
+    /* once everything has arrived: push the model's textures to the GPU and compile every shader
+       now, so the first visible frame doesn't hitch (this is what hurt weak PCs), then tell the
+       loader it can open */
+    Promise.all(pending).then(async () => {
+      const r = renderer;
+      if (disposed || !r) return;
+      try {
+        mannequin?.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          const mat = mesh.material as THREE.Material | THREE.Material[];
+          for (const m of Array.isArray(mat) ? mat : [mat]) {
+            if (!m) continue;
+            for (const v of Object.values(m)) {
+              if ((v as THREE.Texture | null)?.isTexture) r.initTexture(v as THREE.Texture);
+            }
+          }
+        });
+        const rc = r as THREE.WebGLRenderer & { compileAsync?: (s: THREE.Object3D, c: THREE.Camera) => Promise<unknown> };
+        if (rc.compileAsync) await rc.compileAsync(scene, camera);
+        else r.compile(scene, camera);
+      } catch {
+        /* warm-up is best effort */
+      }
+      if (disposed) return;
+      assetsReady = true;
+      (window as unknown as { __heroReady?: boolean }).__heroReady = true;
+      window.dispatchEvent(new Event("daneli-hero-ready"));
+    });
 
     const clearWall = () => {
       for (const tile of wallAllTiles) {
@@ -923,7 +979,7 @@ export function useHeroSection({
       }
 
       const loaderPlaying = document.documentElement.dataset.loader === "playing";
-      if (loaderPlaying) {
+      if (loaderPlaying || !assetsReady) {
         spiralIntro = 0;
         spiralIntroStart = -1;
       } else if (spiralIntro < 1) {
@@ -934,7 +990,8 @@ export function useHeroSection({
         const tt = time / 1000;
         const calm = 1 - smooth(0.02, 0.4, K);
         /* zero-gravity float + slow turn toward the pointer */
-        mannequin.position.y = mannequinBaseY + Math.sin(tt * 0.8) * 7 * calm;
+        const modelRise = Math.pow(1 - spiralIntro, 3) * -60; /* starts 60px low, eases up into place */
+        mannequin.position.y = mannequinBaseY + Math.sin(tt * 0.8) * 7 * calm + modelRise;
         mannequin.rotation.y = Math.sin(tt * 0.35) * 0.25 + pointerDamped.x * 0.05;
         mannequin.rotation.z = Math.sin(tt * 0.5) * 0.03;
 
@@ -1038,6 +1095,13 @@ export function useHeroSection({
       if (Math.abs(reelsOpacity - lastReelsO) > 0.002) {
         if (reelsHeadingRef.current) reelsHeadingRef.current.style.opacity = String(reelsOpacity);
         if (reelsMetaRef.current) reelsMetaRef.current.style.opacity = String(reelsOpacity);
+        const video = reelsVideoRef.current;
+        if (video) {
+          video.style.opacity = String(reelsOpacity);
+          /* lifts away and shrinks slightly as the hero hands off to the featured section */
+          video.style.transform = `translate3d(0, ${(-exitT * 70).toFixed(1)}px, 0) scale(${(1 - exitT * 0.08).toFixed(3)})`;
+          video.style.pointerEvents = reelsOpacity > 0.6 ? "auto" : "none";
+        }
         lastReelsO = reelsOpacity;
       }
 
@@ -1098,5 +1162,5 @@ export function useHeroSection({
       renderer?.dispose();
       renderer = null;
     };
-  }, [canvasRef, stageRef, wrapperRef, heroOverlayRef, heroMetaRef, reelsHeadingRef, reelsMetaRef, vignetteRef, exitRef]);
+  }, [canvasRef, stageRef, wrapperRef, heroOverlayRef, heroMetaRef, reelsHeadingRef, reelsMetaRef, reelsVideoRef, vignetteRef, exitRef]);
 }

@@ -6,17 +6,11 @@ import Image from "next/image";
 import type { Work } from "@/features/works";
 import { useWorkTransition, PAGE_BG, FADE_ATTR } from "@/features/works";
 
-/**
- * Project page. There is no hero image: the opened card dissolves into the page colour
- * (see work-transition.tsx) and this content fades up on top of it.
- * Anything with data-work-fade is animated in here and animated out again on "Back".
- */
 export function WorkPage({ work: resolved }: { work?: Work }) {
   const rootRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const { close } = useWorkTransition();
 
-  // content fades up (plain tween, no ScrollTrigger: other components kill triggers on cleanup)
   useEffect(() => {
     if (!resolved) return;
     const ctx = gsap.context(() => {
@@ -29,7 +23,6 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
     return () => ctx.revert();
   }, [resolved]);
 
-  // Escape = back
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
@@ -38,7 +31,7 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [close]);
 
-  // Smooth horizontal scroll + velocity-based motion blur
+  // smooth horizontal scroll + a bit of motion blur
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -65,7 +58,6 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
     };
 
     const onScroll = () => {
-      // keep target in sync for drag/trackpad/native scroll interactions
       if (Math.abs(el.scrollLeft - current) > 1) {
         target = el.scrollLeft;
         current = el.scrollLeft;
@@ -115,7 +107,7 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
   if (!resolved) {
     return (
       <main className="min-h-screen p-8 text-foreground" style={{ background: PAGE_BG }}>
-        <h1 className="text-4xl font-bold">Project not found</h1>
+        <h1 className="font-monument text-4xl font-extrabold uppercase">Project not found</h1>
       </main>
     );
   }
@@ -135,11 +127,11 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
         <section className="flex h-full w-[min(92vw,900px)] shrink-0 flex-col justify-center px-8 md:px-12 lg:px-16">
           <div
             {...{ [FADE_ATTR]: "" }}
-            className="mb-6 flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.4em]"
+            className="mb-6 flex flex-wrap items-center gap-2 font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/55"
           >
             {resolved.tags.map((t, k) => (
               <span key={t} className="flex items-center gap-2">
-                {k > 0 && <span className="text-foreground/40">•</span>}
+                {k > 0 && <span className="text-foreground/35">•</span>}
                 {t}
               </span>
             ))}
@@ -147,37 +139,37 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
 
           <h1
             {...{ [FADE_ATTR]: "" }}
-            className="text-6xl font-bold leading-[1] tracking-tight lg:text-8xl"
+            className="font-monument text-[clamp(3rem,8vw,7rem)] font-extrabold uppercase leading-[0.92] tracking-normal"
           >
             {resolved.name}
           </h1>
 
           <p
             {...{ [FADE_ATTR]: "" }}
-            className="mt-10 max-w-md text-lg leading-relaxed text-foreground/80"
+            className="mt-10 max-w-md text-base leading-relaxed text-foreground/65 md:text-lg"
           >
             {resolved.description}
           </p>
 
           <dl
             {...{ [FADE_ATTR]: "" }}
-            className="mt-12 grid max-w-md grid-cols-2 gap-6 border-t border-foreground pt-5 text-xs uppercase tracking-[0.2em]"
+            className="mt-12 grid max-w-md grid-cols-2 gap-6 border-t border-foreground/20 pt-5 font-mono text-[11px] uppercase tracking-[0.2em]"
           >
             <div>
-              <dt className="mb-2 opacity-50">Year</dt>
-              <dd>{resolved.year}</dd>
+              <dt className="mb-2 text-foreground/45">Year</dt>
+              <dd className="text-foreground/75">{resolved.year}</dd>
             </div>
             <div>
-              <dt className="mb-2 opacity-50">Client</dt>
-              <dd>{resolved.client}</dd>
+              <dt className="mb-2 text-foreground/45">Client</dt>
+              <dd className="text-foreground/75">{resolved.client}</dd>
             </div>
             <div>
-              <dt className="mb-2 opacity-50">Role</dt>
-              <dd>{resolved.role}</dd>
+              <dt className="mb-2 text-foreground/45">Role</dt>
+              <dd className="text-foreground/75">{resolved.role}</dd>
             </div>
             <div>
-              <dt className="mb-2 opacity-50">Project</dt>
-              <dd>No. {String(resolved.id).padStart(2, "0")}</dd>
+              <dt className="mb-2 text-foreground/45">Project</dt>
+              <dd className="text-foreground/75">No. {String(resolved.id).padStart(2, "0")}</dd>
             </div>
           </dl>
         </section>
@@ -233,7 +225,7 @@ export function WorkPage({ work: resolved }: { work?: Work }) {
           type="button"
           {...{ [FADE_ATTR]: "" }}
           onClick={close}
-          className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-foreground bg-background/80 px-6 py-3 text-xs font-medium uppercase tracking-[0.3em] text-foreground backdrop-blur-md transition-colors duration-300 hover:bg-foreground hover:text-background"
+          className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-foreground/40 bg-background/80 px-6 py-3 font-screener text-[10px] uppercase tracking-[0.28em] text-foreground backdrop-blur-md transition-colors duration-300 hover:bg-foreground hover:text-background"
         >
           <span aria-hidden="true">←</span>
           Back

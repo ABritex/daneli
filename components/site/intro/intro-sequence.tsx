@@ -2,15 +2,8 @@
 
 import { useEffect } from "react";
 
-/**
- * The intro sequencer.
- *
- * Waits --intro-hold after the loader finishes, then sets
- * html[data-intro="color"], which makes --background / --foreground
- * transition from black/white to the real palette.
- */
+// waits after loader, then flips the site into color mode
 export function IntroSequence() {
-  // sequencer: loader finished -> hold -> colour shift
   useEffect(() => {
     const root = document.documentElement;
     let timer: number | undefined;
