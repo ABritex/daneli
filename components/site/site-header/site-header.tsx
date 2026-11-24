@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type Lenis from "lenis";
 import { Nav } from "./nav";
@@ -93,7 +94,28 @@ export function SiteHeader() {
       <div
         className={`${barBase} ${hidden ? hiddenClass : "translate-y-0 opacity-100"}`}
       >
-        <div className="flex h-full w-full items-center">
+        <div className="relative flex h-full w-full items-center">
+          <Link
+            href="/"
+            aria-label="Home"
+            className="nav-item absolute left-0 md:left-[15px] inline-flex opacity-55 transition-opacity duration-200 hover:opacity-100"
+            style={{ "--i": 0 } as React.CSSProperties}
+          >
+            <span
+              aria-hidden="true"
+              className="block h-8 aspect-[1385/1664] -translate-y-[4px] bg-foreground md:h-10"
+              style={{
+                maskImage: "url(/daneli-word/daneli-logo-d.svg)",
+                WebkitMaskImage: "url(/daneli-word/daneli-logo-d.svg)",
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+              }}
+            />
+          </Link>
           <Nav />
         </div>
       </div>

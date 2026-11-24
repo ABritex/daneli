@@ -60,7 +60,7 @@ export function useWorkScene() {
             }
           }
         },
-        { rootMargin: "400px 0px" },
+        { rootMargin: "200px 0px", threshold: 0.01 },
       );
       root.querySelectorAll<HTMLVideoElement>("video").forEach((v) => io!.observe(v));
     });

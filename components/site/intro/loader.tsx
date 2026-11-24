@@ -35,6 +35,8 @@ export function Loader() {
   const inkRef = useRef<HTMLDivElement>(null);
   const haloRef = useRef<HTMLDivElement>(null);
   const grainRef = useRef<HTMLDivElement>(null);
+  const countCoverRef = useRef<HTMLSpanElement>(null);
+  const countInkRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -123,6 +125,20 @@ export function Loader() {
 
     /* paused: it only starts once the minimum hold has passed AND the hero reports it is ready
        (model + textures loaded, GPU warmed). slow PCs just see the wordmark a little longer */
+    const counter = { v: 0 };
+    const setCount = (v: number) => {
+      const t = String(Math.round(v)).padStart(2, "0");
+      if (countCoverRef.current) countCoverRef.current.textContent = t;
+      if (countInkRef.current) countInkRef.current.textContent = t;
+    };
+    setCount(0);
+    const countTween = gsap.to(counter, {
+      v: 90,
+      duration: 8,
+      ease: "power1.out",
+      onUpdate: () => setCount(counter.v),
+    });
+
     const tl = gsap.timeline({ paused: true });
     let holdDone = false;
     let forced = false;
@@ -131,6 +147,8 @@ export function Loader() {
     const tryStart = () => {
       if (started || !holdDone || !(forced || heroReady())) return;
       started = true;
+      countTween.kill();
+      gsap.to(counter, { v: 100, duration: 0.35, ease: "power2.out", onUpdate: () => setCount(counter.v) });
       window.removeEventListener("daneli-hero-ready", tryStart);
       tl.play();
     };
@@ -168,6 +186,7 @@ export function Loader() {
 
     return () => {
       window.removeEventListener("daneli-hero-ready", tryStart);
+      countTween.kill();
       tl.kill();
       timers.forEach((t) => window.clearTimeout(t));
       document.body.style.overflow = prevOverflow;
@@ -214,11 +233,25 @@ export function Loader() {
           />
         )}
         <div className={wordClass} style={{ position: "relative" }}>DANELI</div>
+        <span
+          ref={countCoverRef}
+          className="font-screener text-[10px] uppercase tracking-[0.32em]"
+          style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)" }}
+        >
+          00
+        </span>
       </div>
 
       {/* light word, visible only inside the hole */}
       <div ref={inkRef} style={{ ...centre, color: FOREGROUND, opacity: 0, willChange: "mask-image" }}>
         <div className={wordClass}>DANELI</div>
+        <span
+          ref={countInkRef}
+          className="font-screener text-[10px] uppercase tracking-[0.32em]"
+          style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)" }}
+        >
+          00
+        </span>
       </div>
 
       {/* soft glow along the circle's edge */}
