@@ -15,7 +15,7 @@ export function AboutSection() {
   useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCopyDone });
 
   return (
-    <section id="about" ref={sectionRef} className="relative h-[400vh] px-6 md:px-12">
+    <section id="about" ref={sectionRef} className="relative h-[400vh]">
       <div className="sticky top-0 isolate flex h-dvh items-center overflow-hidden">
         <div className="relative mx-auto w-full max-w-7xl">
           <div className="relative flex min-h-[78dvh] items-center justify-center">
@@ -35,7 +35,7 @@ export function AboutSection() {
               <div
                 ref={imageWrapRef}
                 data-image-wrap
-                className="relative aspect-[1526/1892] h-[min(96svh,calc(96vw*1.2398))] will-change-transform"
+                className="relative aspect-[1526/1892] h-[min(96svh,calc(96vw*1.2398))] shrink-0 will-change-transform"
               >
                 <div
                   data-image
@@ -67,7 +67,7 @@ export function AboutSection() {
             {/* the actual about copy */}
             <div
               data-copy
-              className="absolute inset-0 z-30 grid grid-cols-12 content-center gap-x-6 text-left"
+              className="absolute inset-0 z-30 grid grid-cols-12 content-center gap-x-6 px-6 text-left md:px-12"
             >
               <div className="col-span-12 md:col-span-8 md:col-start-4">
                 <p
