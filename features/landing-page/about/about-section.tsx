@@ -48,7 +48,7 @@ export function AboutSection() {
                     width={1526}
                     height={1892}
                     loading="lazy"
-                    fetchPriority="low"
+                    fetchPriority="auto"
                     sizes="(max-width: 768px) 92vw, 720px"
                     className="h-full w-full object-contain object-bottom"
                   />

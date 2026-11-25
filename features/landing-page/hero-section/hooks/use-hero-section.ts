@@ -224,54 +224,56 @@ export function useHeroSection({
     gltfLoader.load(
       modelUrl, /* scene.bin is shared; mobile swaps in 1024² textures */
       (gltf) => {
-        if (disposed) {
-          resolve();
-          return;
-        }
-        const obj = gltf.scene;
-        obj.traverse((child) => {
-          const mesh = child as THREE.Mesh;
-          if (mesh.isMesh) {
-            mesh.frustumCulled = false;
-            mesh.renderOrder = 9000000; /* draw last: on top of the spiral cards (2000000+) and wall tiles */
-            const mat = mesh.material as THREE.MeshStandardMaterial | THREE.MeshStandardMaterial[];
-            const mats = Array.isArray(mat) ? mat : [mat];
-            for (const m of mats) {
-              if (!m) continue;
-              m.transparent = true;
-              m.opacity = 0;
-              m.depthWrite = true;
-              m.depthTest = true;
-              m.needsUpdate = true;
+        try {
+          if (disposed) return;
+          const obj = gltf.scene;
+          obj.traverse((child) => {
+            const mesh = child as THREE.Mesh;
+            if (mesh.isMesh) {
+              mesh.frustumCulled = false;
+              mesh.renderOrder = 9000000; /* draw last: on top of the spiral cards (2000000+) and wall tiles */
+              const mat = mesh.material as THREE.MeshStandardMaterial | THREE.MeshStandardMaterial[];
+              const mats = Array.isArray(mat) ? mat : [mat];
+              for (const m of mats) {
+                if (!m) continue;
+                m.transparent = true;
+                m.opacity = 0;
+                m.depthWrite = true;
+                m.depthTest = true;
+                m.needsUpdate = true;
+              }
             }
-          }
-          /* index the bones by a cleaned-up name: "Arm.R_08" -> "armr08" */
-          const bone = child as THREE.Bone;
-          if (bone.isBone) {
-            const key = bone.name.toLowerCase().replace(/[._\s]/g, "");
-            bones[key] = { bone, rest: bone.quaternion.clone() };
-          }
-        });
+            /* index the bones by a cleaned-up name: "Arm.R_08" -> "armr08" */
+            const bone = child as THREE.Bone;
+            if (bone.isBone) {
+              const key = bone.name.toLowerCase().replace(/[._\s]/g, "");
+              bones[key] = { bone, rest: bone.quaternion.clone() };
+            }
+          });
 
-        const box = new THREE.Box3().setFromObject(obj);
-        const size = new THREE.Vector3();
-        const center = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z, 1);
-        const targetH = 520;
-        obj.scale.setScalar(targetH / maxDim);
+          const box = new THREE.Box3().setFromObject(obj);
+          const size = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          const maxDim = Math.max(size.x, size.y, size.z, 1);
+          const targetH = 520;
+          obj.scale.setScalar(targetH / maxDim);
 
-        box.setFromObject(obj);
-        box.getCenter(center);
-        obj.position.sub(center);
+          box.setFromObject(obj);
+          box.getCenter(center);
+          obj.position.sub(center);
 
-        /* pivot at the middle of the body so turning / floating doesn't swing it off-centre */
-        const holder = new THREE.Group();
-        holder.add(obj);
-        mannequin = holder;
-        mannequinBaseY = holder.position.y;
-        scene.add(holder);
-        resolve();
+          /* pivot at the middle of the body so turning / floating doesn't swing it off-centre */
+          const holder = new THREE.Group();
+          holder.add(obj);
+          mannequin = holder;
+          mannequinBaseY = holder.position.y;
+          scene.add(holder);
+        } catch (err) {
+          console.error("[hero] mannequin setup failed:", err);
+        } finally {
+          resolve();
+        }
       },
       undefined,
       (err) => {
@@ -295,7 +297,11 @@ export function useHeroSection({
         tex = loader.load(
           src,
           (t) => {
-            renderer?.initTexture(t);
+            try {
+              renderer?.initTexture(t);
+            } catch {
+              /* warm-up is best effort */
+            }
             done();
           },
           undefined,
@@ -335,9 +341,16 @@ export function useHeroSection({
     /* once everything has arrived: push the model's textures to the GPU and compile every shader
        now, so the first visible frame doesn't hitch (this is what hurt weak PCs), then tell the
        loader it can open */
-    Promise.all(pending).then(async () => {
+    void Promise.allSettled(pending).then(async () => {
       const r = renderer;
-      if (disposed || !r) return;
+      if (disposed || !r) {
+        if (!disposed) {
+          assetsReady = true;
+          (window as unknown as { __heroReady?: boolean }).__heroReady = true;
+          window.dispatchEvent(new Event("daneli-hero-ready"));
+        }
+        return;
+      }
       try {
         mannequin?.traverse((child) => {
           const mesh = child as THREE.Mesh;

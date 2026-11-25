@@ -17,14 +17,46 @@ export type Plane = {
   el: HTMLElement;
   video: HTMLVideoElement;
   tex: THREE.VideoTexture;
-  poster: THREE.Texture | null; // shown until the video has a decoded frame
+  poster: THREE.Texture | null; // shown until the video has produced its first frame
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   appear: number | null;
   lastT: number;
+  hasFrame: boolean; // true once the video has decoded a frame; from then on we never fall back to the poster
+  aspect: number | null; // last known video aspect, so an unloaded video doesn't change the crop
   hover: { v: number; target: number; mx: number; my: number; tmx: number; tmy: number };
 };
 
-export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
+export type WorkCanvasState = {
+  planes: Plane[];
+  sectionBody: HTMLElement | null;
+  reduceMotion: boolean;
+  cleanup: () => void;
+};
+
+// three's VideoTexture already re-uploads on every new frame when this exists
+const HAS_RVFC =
+  typeof HTMLVideoElement !== "undefined" && "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
+export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement): WorkCanvasState {
+  const sectionBody = root.querySelector<HTMLElement>("[data-section-body]");
+
+  /* ------------------ phones: no WebGL, plain <video> cards ------------------
+     the canvas is positioned from JS after the browser has already scrolled the DOM, so on touch
+     devices (compositor-thread scrolling) the cards always trail their titles. the shader effects
+     are off on mobile anyway, so the DOM <video> is both faster and perfectly in sync. */
+  if (!mediaMatches(MQ_DESKTOP_768)) {
+    const prevDisplay = canvas.style.display;
+    canvas.style.display = "none";
+    return {
+      planes: [],
+      sectionBody,
+      reduceMotion: false,
+      cleanup: () => {
+        canvas.style.display = prevDisplay;
+      },
+    };
+  }
+
   const medias = Array.from(root.querySelectorAll<HTMLElement>("[data-media]"));
 
   /* -------------------------- WebGL setup -------------------------- */
@@ -42,18 +74,13 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
   }
 
   const planes: Plane[] = [];
-  // gsap moves this wrapper, canvas follows it
-  const sectionBody = root.querySelector<HTMLElement>("[data-section-body]");
   const canHover = mediaMatches(MQ_HOVER);
   const narrow = mediaMatches(MQ_NARROW_900);
-  const mobile = !mediaMatches(MQ_DESKTOP_768);
   let tick: ((time: number, deltaMs: number) => void) | null = null;
   let onResize: (() => void) | null = null;
-  const reduceMotion =
-    !IGNORE_REDUCED_MOTION && mediaMatches(MQ_REDUCED_MOTION);
-  const reduceEffects = reduceMotion || mobile;
+  const reduceMotion = !IGNORE_REDUCED_MOTION && mediaMatches(MQ_REDUCED_MOTION);
   // enough segments for the bend to look smooth
-  const geometry = new THREE.PlaneGeometry(1, 1, reduceEffects ? 1 : 40, reduceEffects ? 1 : 40);
+  const geometry = new THREE.PlaneGeometry(1, 1, reduceMotion ? 1 : 40, reduceMotion ? 1 : 40);
 
   if (renderer) {
     const gl = renderer;
@@ -83,6 +110,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
       tex.generateMipmaps = false;
+      tex.colorSpace = THREE.SRGBColorSpace;
 
       const material = new THREE.ShaderMaterial({
         vertexShader,
@@ -99,7 +127,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
           uPar: { value: 0 },
           uVel: { value: 0 },
           uViewport: { value: new THREE.Vector2(1, 1) },
-          uAmp: { value: reduceEffects ? 0 : 1 },
+          uAmp: { value: reduceMotion ? 0 : 1 },
         },
       });
       let poster: THREE.Texture | null = null;
@@ -108,6 +136,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
         posterLoader.load(posterUrl, (t) => {
           t.minFilter = THREE.LinearFilter;
           t.generateMipmaps = false;
+          t.colorSpace = THREE.SRGBColorSpace; // same space as the video, so the swap doesn't pop
           const entry = planes.find((q) => q.el === el);
           if (entry) entry.poster = t;
           else t.dispose();
@@ -118,7 +147,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
       scene.add(mesh);
       video.style.opacity = "0"; // the canvas draws it now
       const hover = { v: 0, target: 0, mx: 0, my: 0, tmx: 0, tmy: 0 };
-      planes.push({ el, video, tex, poster, mesh, appear: null, lastT: -1, hover });
+      planes.push({ el, video, tex, poster, mesh, appear: null, lastT: -1, hasFrame: false, aspect: null, hover });
 
       // hover just affects the texture inside, card itself stays put
       if (canHover) {
@@ -151,55 +180,53 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
       const vh = window.innerHeight;
 
       /* scroll velocity -> low-pass -> spring */
-      let uVel = 0;
       const y = window.scrollY;
-      if (!mobile) {
-        rawVel += ((y - lastY) / dt - rawVel) * damp(14, dt);
-        const target = clamp(rawVel / 2600, -1, 1);
-        spring.v += ((target - spring.x) * 120 - spring.v * 22) * dt; // critically damped: eases to flat, no bounce
-        spring.x += spring.v * dt;
-        uVel = clamp(spring.x, -1.2, 1.2);
-      }
+      rawVel += ((y - lastY) / dt - rawVel) * damp(14, dt);
+      const target = clamp(rawVel / 2600, -1, 1);
+      spring.v += ((target - spring.x) * 120 - spring.v * 22) * dt; // critically damped: eases to flat, no bounce
+      spring.x += spring.v * dt;
+      const uVel = clamp(spring.x, -1.2, 1.2);
       lastY = y;
 
       /* the section in / out fades the whole wrapper with GSAP; the canvas has to fade with it */
       const bo = sectionBody ? parseFloat(sectionBody.style.opacity) : NaN;
       const bodyAlpha = Number.isNaN(bo) ? 1 : bo;
 
+      let anyOn = false;
       for (const p of planes) {
         const r = p.el.getBoundingClientRect();
         const hiddenByTransition = p.el.closest("[data-work]")?.hasAttribute("data-transitioning");
-        // video frame when there is one, poster otherwise, so a card never goes blank
+
+        // once the video has produced a frame we keep drawing the video texture (it holds the last
+        // frame), so a loop restart, a seek or an unload never flashes the poster or a blank card
         const videoOk = p.video.readyState >= 2;
-        const src: THREE.Texture | null = videoOk ? p.tex : p.poster;
+        if (videoOk) {
+          p.hasFrame = true;
+          if (p.video.videoWidth) p.aspect = p.video.videoWidth / p.video.videoHeight;
+        }
+        const src: THREE.Texture | null = p.hasFrame ? p.tex : p.poster;
         const on =
           !hiddenByTransition && !!src && bodyAlpha > 0.01 && r.bottom > -160 && r.top < vh + 160;
         p.mesh.visible = on;
         if (!on) continue;
+        anyOn = true;
 
-        // keep the texture alive: a video that was paused (visibility:hidden, tab / route change,
-        // the loader) is restarted, and a frozen VideoTexture is forced to re-upload
-        if (p.video.src && p.video.paused && !p.video.ended) p.video.play().catch(() => {});
-        if (videoOk && p.video.currentTime !== p.lastT) {
+        // play / pause / retry lives in useLazyVideos now. only browsers without
+        // requestVideoFrameCallback need the manual re-upload (otherwise it's a duplicate upload)
+        if (!HAS_RVFC && videoOk && p.video.currentTime !== p.lastT) {
           p.lastT = p.video.currentTime;
           p.tex.needsUpdate = true;
         }
 
-        // entrance: scroll-linked grow on desktop; static on mobile
-        let s = 1;
-        if (mobile) {
-          p.appear = 1;
-        } else {
-          // measured from the bottom edge (scrolling down) AND the top edge (scrolling up),
-          // so the grow-in plays the same in both directions
-          const kBottom = clamp((vh - r.top) / (vh * ENTER_RANGE), 0, 1);
-          const kTop = SCALE_FROM_TOP ? clamp(r.bottom / (vh * ENTER_RANGE), 0, 1) : 1;
-          const k = Math.min(kBottom, kTop);
-          const eased = 1 - Math.pow(1 - k, 3);
-          if (p.appear === null) p.appear = eased;
-          p.appear += (eased - p.appear) * damp(ENTER_SMOOTH, dt);
-          s = ENTER_SCALE + (1 - ENTER_SCALE) * p.appear;
-        }
+        // entrance: scroll-linked grow, measured from the bottom edge (scrolling down) AND the top
+        // edge (scrolling up), so the grow-in plays the same in both directions
+        const kBottom = clamp((vh - r.top) / (vh * ENTER_RANGE), 0, 1);
+        const kTop = SCALE_FROM_TOP ? clamp(r.bottom / (vh * ENTER_RANGE), 0, 1) : 1;
+        const k = Math.min(kBottom, kTop);
+        const eased = 1 - Math.pow(1 - k, 3);
+        if (p.appear === null) p.appear = eased;
+        p.appear += (eased - p.appear) * damp(ENTER_SMOOTH, dt);
+        const s = ENTER_SCALE + (1 - ENTER_SCALE) * p.appear;
 
         // hover easing (zoom + cursor drift inside the card)
         const h = p.hover;
@@ -211,9 +238,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
         p.mesh.scale.set(r.width * s, r.height * s, 1);
 
         const img = src.image as { width?: number; height?: number } | undefined;
-        const va = videoOk && p.video.videoWidth
-          ? p.video.videoWidth / p.video.videoHeight
-          : img?.width && img?.height ? img.width / img.height : 16 / 9;
+        const va = p.aspect ?? (img?.width && img?.height ? img.width / img.height : 16 / 9);
         const pa = r.width / r.height;
         const u = p.mesh.material.uniforms;
         u.uTex.value = src;
@@ -228,7 +253,14 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
         (u.uMouse.value as THREE.Vector2).set(h.mx, h.my);
         (u.uViewport.value as THREE.Vector2).set(vw, vh);
       }
-      gl.render(scene, camera);
+
+      // nothing on screen: don't render, and take the full-screen layer out of compositing
+      if (anyOn) {
+        canvas.style.visibility = "";
+        gl.render(scene, camera);
+      } else {
+        canvas.style.visibility = "hidden";
+      }
     };
     // runs after Lenis (which is added with priority) so planes never lag the DOM
     gsap.ticker.add(tick);
@@ -241,6 +273,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
     cleanup: () => {
       if (tick) gsap.ticker.remove(tick);
       if (onResize) window.removeEventListener("resize", onResize);
+      canvas.style.visibility = "";
       planes.forEach((p) => {
         p.tex.dispose();
         p.poster?.dispose();

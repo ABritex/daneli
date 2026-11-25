@@ -36,7 +36,10 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
     const backWrap = section.querySelector<HTMLElement>("[data-word-wrap='back']");
     const frontWrap = section.querySelector<HTMLElement>("[data-word-wrap='front']");
     const copyItems = Array.from(section.querySelectorAll<HTMLElement>("[data-copy-item]"));
-    if (!image || !backWrap || !frontWrap) return;
+    if (!image || !backWrap || !frontWrap) {
+      if (stage) stage.style.opacity = "1";
+      return;
+    }
 
     /* ---------- size PORTFOLIO to the stage (reads the CURRENT font size, so any loaded font works) ---------- */
     let away = window.innerWidth;
@@ -70,6 +73,13 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
 
     /* ---------- write one frame ---------- */
     let copyDone = false;
+    let shown = false;
+    const showStage = () => {
+      if (shown || !stage) return;
+      stage.style.opacity = "1";
+      shown = true;
+    };
+    const safetyShow = window.setTimeout(showStage, 1500);
     const render = (e: number, P: number) => {
       const t = P * TOTAL; // pinned time
 
@@ -132,7 +142,6 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
     let cP = -1;
     let last = performance.now();
     let raf = 0;
-    let shown = false;
 
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
@@ -164,15 +173,13 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
       render(ce, cP);
 
       /* the stage is hidden until the first correct frame has been written (no flash of the wrong state) */
-      if (!shown && stage) {
-        stage.style.opacity = "1";
-        shown = true;
-      }
+      showStage();
     };
     raf = requestAnimationFrame(tick);
 
     return () => {
       alive = false;
+      window.clearTimeout(safetyShow);
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("resize", fit);

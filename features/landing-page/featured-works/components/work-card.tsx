@@ -26,11 +26,11 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
     >
       <div
         data-media
-        className="relative aspect-[4/3] w-full overflow-hidden bg-[#070707]"
+        className="relative aspect-[4/3] w-full overflow-hidden rounded-[14px] bg-[#070707]"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 hidden md:block"
           style={{
             backgroundImage: GRAIN_URL,
             opacity: 0.6,
