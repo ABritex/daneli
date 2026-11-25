@@ -114,6 +114,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
       const a = target?.closest<HTMLAnchorElement>("a[href]");
       if (!a) return;
+      if (a.closest("#mobile-menu")) return;
       const href = a.getAttribute("href");
       if (!href) return;
 

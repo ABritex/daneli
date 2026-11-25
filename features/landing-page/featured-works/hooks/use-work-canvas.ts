@@ -51,8 +51,9 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
   let onResize: (() => void) | null = null;
   const reduceMotion =
     !IGNORE_REDUCED_MOTION && mediaMatches(MQ_REDUCED_MOTION);
+  const reduceEffects = reduceMotion || mobile;
   // enough segments for the bend to look smooth
-  const geometry = new THREE.PlaneGeometry(1, 1, 40, 40);
+  const geometry = new THREE.PlaneGeometry(1, 1, reduceEffects ? 1 : 40, reduceEffects ? 1 : 40);
 
   if (renderer) {
     const gl = renderer;
@@ -98,7 +99,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
           uPar: { value: 0 },
           uVel: { value: 0 },
           uViewport: { value: new THREE.Vector2(1, 1) },
-          uAmp: { value: reduceMotion ? 0 : 1 },
+          uAmp: { value: reduceEffects ? 0 : 1 },
         },
       });
       let poster: THREE.Texture | null = null;
@@ -150,13 +151,16 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
       const vh = window.innerHeight;
 
       /* scroll velocity -> low-pass -> spring */
+      let uVel = 0;
       const y = window.scrollY;
-      rawVel += ((y - lastY) / dt - rawVel) * damp(14, dt);
+      if (!mobile) {
+        rawVel += ((y - lastY) / dt - rawVel) * damp(14, dt);
+        const target = clamp(rawVel / 2600, -1, 1);
+        spring.v += ((target - spring.x) * 120 - spring.v * 22) * dt; // critically damped: eases to flat, no bounce
+        spring.x += spring.v * dt;
+        uVel = clamp(spring.x, -1.2, 1.2);
+      }
       lastY = y;
-      const target = clamp(rawVel / 2600, -1, 1);
-      spring.v += ((target - spring.x) * 120 - spring.v * 22) * dt; // critically damped: eases to flat, no bounce
-      spring.x += spring.v * dt;
-      const uVel = clamp(spring.x, -1.2, 1.2);
 
       /* the section in / out fades the whole wrapper with GSAP; the canvas has to fade with it */
       const bo = sectionBody ? parseFloat(sectionBody.style.opacity) : NaN;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type Lenis from "lenis";
@@ -21,6 +21,7 @@ const idx = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -99,7 +100,19 @@ export function SiteHeader() {
   }, [pathname]);
 
   /* ---------- mobile menu ---------- */
-  const close = useCallback(() => setOpen(false), []);
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+    const menu = menuRef.current;
+    if (menu) {
+      menu.style.transform = "translateY(-100%)";
+      menu.style.pointerEvents = "none";
+      window.setTimeout(() => {
+        if (!menu.style.transform || menu.style.transform === "translateY(-100%)") {
+          menu.style.visibility = "hidden";
+        }
+      }, SLIDE_MS);
+    }
+  }, []);
 
 
 
@@ -108,27 +121,48 @@ export function SiteHeader() {
     if (!open) return;
     getLenis()?.stop();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closeMenu();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
       if (document.documentElement.dataset.loader !== "playing") getLenis()?.start();
     };
-  }, [open]);
+  }, [open, closeMenu]);
 
-  // going to a section of the home page: close first, then glide there through Lenis
-  const onMenuLink = (e: React.MouseEvent, href: string) => {
-    setOpen(false);
-    if (pathname !== "/" || !href.startsWith("/#")) return;
-    const target = document.querySelector<HTMLElement>(href.slice(1));
+  /** scroll to a section of the home page; plain scroll if Lenis is missing */
+  const scrollToSection = (hash: string) => {
+    const target = document.querySelector<HTMLElement>(hash);
     if (!target) return;
-    e.preventDefault();
+    const y = Math.max(0, target.getBoundingClientRect().top + window.scrollY);
     const lenis = getLenis();
-    window.setTimeout(() => {
-      if (lenis) lenis.scrollTo(target, { duration: 1.6 });
-      else target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 350);
+    if (lenis) lenis.scrollTo(y, { duration: 1.6, force: true });
+    else window.scrollTo({ top: y, behavior: "smooth" });
+  };
+
+  const onMenuLink = (e: React.MouseEvent, href: string) => {
+    const onHome = pathname === "/";
+    const hash = href.startsWith("/#") ? href.slice(1) : null;
+
+    /* close first, and give Lenis back right away instead of waiting for the effect cleanup */
+    closeMenu();
+    if (document.documentElement.dataset.loader !== "playing") getLenis()?.start();
+
+    /* another page: let Next navigate, the menu also closes on the route change */
+    if (!onHome) return;
+
+    /* home page: Work / About glide to their section, Home goes back to the top */
+    if (hash || href === "/") {
+      e.preventDefault();
+      window.setTimeout(() => {
+        if (hash) scrollToSection(hash);
+        else {
+          const lenis = getLenis();
+          if (lenis) lenis.scrollTo(0, { duration: 1.6, force: true });
+          else window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 350);
+    }
   };
 
   const barBase =
@@ -209,26 +243,27 @@ export function SiteHeader() {
 
       {/* ---------- mobile menu: slides down from the top ---------- */}
       <div
+        ref={menuRef}
         id="mobile-menu"
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
         aria-hidden={!open}
-        className={`fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#1b1b1b] text-foreground md:hidden ${
-          open ? "translate-y-0" : "-translate-y-full"
-        }`}
+        className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-[#1b1b1b] text-foreground md:hidden"
         style={{
-          transition: `translate ${SLIDE_MS}ms cubic-bezier(.7,0,.2,1), visibility 0s linear ${
+          transform: open ? "translateY(0)" : "translateY(-100%)",
+          transition: `transform ${SLIDE_MS}ms cubic-bezier(.7,0,.2,1), visibility 0s linear ${
             open ? "0ms" : `${SLIDE_MS}ms`
           }`,
           visibility: open ? "visible" : "hidden",
+          pointerEvents: open ? "auto" : "none",
         }}
       >
         {/* back button: sits exactly where the hamburger is */}
         <button
           type="button"
           aria-label="Back"
-          onClick={close}
+          onClick={closeMenu}
           tabIndex={open ? 0 : -1}
           className="absolute left-6 top-10 inline-flex items-center gap-3"
         >
