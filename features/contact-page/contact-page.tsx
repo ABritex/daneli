@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ContactForm } from "./contact-form";
 import { ContactInfo } from "./contact-info";
 import { SocialLinks } from "./social-links";
@@ -23,12 +24,12 @@ export function ContactPage() {
       <ContactForm />
 
       <div className="mx-auto w-full max-w-7xl pb-20 pt-10">
-        <a
+        <Link
           href="/"
           className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/55 transition-colors hover:text-foreground"
         >
           ← Back to home
-        </a>
+        </Link>
       </div>
     </main>
   );

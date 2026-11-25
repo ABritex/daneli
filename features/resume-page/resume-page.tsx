@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EducationSection } from "./education-section";
 import { ExperienceSection } from "./experience-section";
 import { SkillsSection } from "./skills-section";
@@ -23,12 +24,12 @@ export function ResumePage() {
       <EducationSection />
 
       <div className="mx-auto w-full max-w-7xl pb-20 pt-10">
-        <a
+        <Link
           href="/"
           className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/55 transition-colors hover:text-foreground"
         >
           ← Back to home
-        </a>
+        </Link>
       </div>
     </main>
   );

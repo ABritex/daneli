@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/site";
+
 export function ContactForm() {
   return (
     <section className="mx-auto w-full max-w-7xl py-20 md:py-28">
@@ -29,7 +31,7 @@ export function ContactForm() {
                 <input
                   type="email"
                   className="mt-3 w-full border-b border-foreground/20 bg-transparent py-3 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/60"
-                  placeholder="lorem@ipsum.com"
+                  placeholder={siteConfig.email}
                 />
               </label>
             </div>

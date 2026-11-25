@@ -1,4 +1,6 @@
-export const CONTACT_EMAIL = "hello@yourdomain.com";
+import { siteConfig } from "@/lib/site";
+
+export const CONTACT_EMAIL = siteConfig.email;
 export const TIMEZONE = "Asia/Manila";
 export const TIMEZONE_LABEL = "PHT";
 

@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { ART } from "../config/art";
+import { ART, ART_MOBILE } from "../config/art";
 import {
   ADAPTIVE_DPR,
   AUTO_SPEED,
@@ -92,13 +92,17 @@ export function useHeroSection({
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     let reduceMotion = !IGNORE_REDUCED_MOTION && motionQuery.matches;
+    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    const narrow = window.matchMedia("(max-width: 900px)").matches;
+    const art = narrow ? ART_MOBILE : ART;
+    const maxDpr = narrow ? 1.5 : MAX_DPR;
     const onMotionChange = (event: MediaQueryListEvent) => {
       reduceMotion = !IGNORE_REDUCED_MOTION && event.matches;
     };
     motionQuery.addEventListener("change", onMotionChange);
 
     let renderer: THREE.WebGLRenderer | null = null;
-    let dprCap = Math.min(window.devicePixelRatio, MAX_DPR);
+    let dprCap = Math.min(window.devicePixelRatio, maxDpr);
     let dpr = dprCap;
     let frameEma = 16.7;
     let dprCooldown = 0;
@@ -145,7 +149,6 @@ export function useHeroSection({
     let glideFrame = 0;
     let lastBeyond = 0;
     let cooldownUntil = 0;
-    let touchY = 0;
     let touching = false;
     let lastMoveAt = performance.now();
     let exitP = 0;
@@ -208,15 +211,17 @@ export function useHeroSection({
     dirLight.position.set(2, 3, 4);
     scene.add(dirLight);
 
-    /* everything the hero has to wait for. the loader curtain holds until this resolves */
+    // loader waits for all this before it opens
     (window as unknown as { __heroReady?: boolean }).__heroReady = false;
     const pending: Promise<void>[] = [];
 
     const gltfLoader = new GLTFLoader();
     pending.push(
       new Promise<void>((resolve) => {
+    // keep mobile model in sync if mannequin changes
+    const modelUrl = narrow ? "/manniquin/scene-mobile.gltf" : "/manniquin/scene.gltf";
     gltfLoader.load(
-      "/manniquin/scene.gltf", /* public/manniquin/scene.gltf + scene.bin + textures/ */
+      modelUrl, /* scene.bin is shared; mobile swaps in 1024² textures */
       (gltf) => {
         if (disposed) {
           resolve();
@@ -279,7 +284,7 @@ export function useHeroSection({
     const loader = new THREE.TextureLoader();
     const bySrc = new Map<string, THREE.Texture>(); /* same image = one texture / one GPU upload */
     const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    for (const src of ART) {
+    for (const src of art) {
       let tex = bySrc.get(src);
       if (!tex) {
         /* upload as soon as the image arrives instead of on the first frame it is drawn
@@ -488,7 +493,7 @@ export function useHeroSection({
       const w = stage.clientWidth;
       const h = stage.clientHeight;
       if (w <= 0 || h <= 0) return;
-      dprCap = Math.min(window.devicePixelRatio, MAX_DPR);
+      dprCap = Math.min(window.devicePixelRatio, maxDpr);
       dpr = Math.min(dpr, dprCap);
       renderer.setPixelRatio(dpr);
       renderer.setSize(w, h, false);
@@ -812,9 +817,16 @@ export function useHeroSection({
       glideFrame = window.requestAnimationFrame(step);
     };
 
+    const cancelGlide = () => {
+      if (!gliding) return;
+      gliding = false;
+      window.cancelAnimationFrame(glideFrame);
+      glideFrame = 0;
+    };
+
     /* true when the gesture started a glide */
     const decide = (dir: 1 | -1): boolean => {
-      if (reduceMotion || gliding) return false;
+      if (reduceMotion || coarsePointer || gliding) return false;
       if (document.documentElement.dataset.loader === "playing") return false;
       const m = metrics();
       if (dir > 0 && m.rectTop <= 2 && m.p < SNAP_P - 0.004) {
@@ -833,10 +845,7 @@ export function useHeroSection({
       return false;
     };
 
-    const inSnapZone = () => {
-      const m = metrics();
-      return m.rectTop <= 2 && m.p < SNAP_P - 0.004;
-    };
+
 
     const onWheel = (e: WheelEvent) => {
       if (reduceMotion) return;
@@ -865,22 +874,15 @@ export function useHeroSection({
         e.stopImmediatePropagation();
       }
     };
-    const onTouchStart = (e: TouchEvent) => {
-      touchY = e.touches[0].clientY;
+    const onTouchStart = () => {
+      cancelGlide();
       touching = true;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (reduceMotion) return;
-      if (gliding || inSnapZone()) e.preventDefault();
     };
     const onTouchCancel = () => {
       touching = false;
     };
-    const onTouchEnd = (e: TouchEvent) => {
+    const onTouchEnd = () => {
       touching = false;
-      const dy = touchY - e.changedTouches[0].clientY;
-      if (Math.abs(dy) < 40) return;
-      decide(dy > 0 ? 1 : -1);
     };
     const onKey = (e: KeyboardEvent) => {
       if (reduceMotion || e.defaultPrevented) return;
@@ -926,6 +928,7 @@ export function useHeroSection({
         !dragging &&
         !touching &&
         !reduceMotion &&
+        !coarsePointer &&
         time - lastMoveAt > SETTLE_IDLE_MS &&
         rect.top <= 2 &&
         p > TRANSITION_START + 0.01 &&
@@ -1112,7 +1115,6 @@ export function useHeroSection({
     frame = window.requestAnimationFrame(render);
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("touchcancel", onTouchCancel, { passive: true });
     window.addEventListener("keydown", onKey);
@@ -1130,7 +1132,6 @@ export function useHeroSection({
       window.cancelAnimationFrame(glideFrame);
       window.removeEventListener("wheel", onWheel, { capture: true });
       window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("touchcancel", onTouchCancel);
       window.removeEventListener("keydown", onKey);

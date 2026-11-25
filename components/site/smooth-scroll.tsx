@@ -8,7 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// the card <-> page morph (work-transition.tsx) manages scroll for these routes itself
+// work transition handles scroll on these pages
 const isWork = (p: string) => p.startsWith("/work/");
 
 /* feel ------------------------------------------------------------- */
@@ -38,9 +38,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     });
     (window as unknown as { __lenis?: Lenis }).__lenis = lenis; // used by work-transition
 
-    // Drive Lenis from GSAP's ticker, and run it FIRST (prioritize = true) so
-    // everything else on the ticker (ScrollTrigger, the WebGL planes) sees the
-    // scroll position of the same frame.
+    // drive lenis from gsap ticker first so scrolltrigger/webgl see the same frame
     const update = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(update, false, true);
     gsap.ticker.lagSmoothing(0);
@@ -48,16 +46,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     lenis.on("scroll", ScrollTrigger.update);
     lenis.scrollTo(0, { immediate: true });
 
-    // Refresh should land at the top (hero/DANELI), not restore a hash target.
+    // refresh should always land at top, not jump to a hash
     if (window.location.hash) {
       history.replaceState(null, "", window.location.pathname + window.location.search);
       window.scrollTo(0, 0);
       lenis.scrollTo(0, { immediate: true, force: true });
     }
 
-    /* animated jump: eased in and out, duration scales with distance.
-       a second request for the same spot while a glide is running is ignored,
-       so two triggers (click + a router scroll) can't restart the ease */
+    // smooth jump, ignore duplicate calls while it's already gliding there
     let lastGlide = { y: -1, until: 0 };
     let glide: gsap.core.Tween | null = null;
     const glideTo = (y: number) => {
@@ -69,9 +65,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       const duration = anchorDuration(Math.abs(to - from));
       lastGlide = { y, until: now + duration * 1000 };
       lenis.start();
-      // GSAP owns the animation, Lenis only receives the position each frame.
-      // (lenis.scrollTo({ duration, easing }) can silently fall back to an instant
-      // jump or its lerp when the constructor has `lerp` set, so we don't rely on it)
+      // gsap drives it, lenis just follows frame by frame
       glide?.kill();
       const state = { y: from };
       glide = gsap.to(state, {
@@ -85,7 +79,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         },
       });
     };
-    // the user grabbing the wheel / touch / keys cancels a running glide
+    // if user takes over, stop the glide
     const cancelGlide = () => {
       glide?.kill();
       glide = null;
@@ -108,10 +102,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     (window as unknown as { __scrollToSection?: ScrollToSection }).__scrollToSection =
       scrollToSection;
 
-    /* 1) clicks: any link to a section on this page (<a href="/#work">, "#about", Next <Link>)
-       and any element with data-scroll-to="work". capture phase = runs before Next's own handler.
-       the URL is deliberately NOT changed: Next hooks history.pushState and answers it with an
-       instant jump to the section, which is exactly the teleport we are removing */
+    // catch section links before next does its instant jump thing
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
@@ -139,9 +130,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener("click", onClick, { capture: true });
 
-    /* 2) safety net: router.push("/#work"), a link from another page, Next's own hash scroll,
-       or any code that calls section.scrollIntoView() all end in an instant jump.
-       turn that jump into the same eased glide */
+    // safety net: turn instant section jumps into the same glide
     const nativeScrollIntoView = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function (this: Element, arg?: boolean | ScrollIntoViewOptions) {
       const instant =
@@ -159,7 +148,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       nativeScrollIntoView.call(this, arg as boolean | ScrollIntoViewOptions);
     };
 
-    // Lenis only moves while the loader is not playing
+    // pause lenis while loader is playing
     const sync = () => {
       if (root.dataset.loader === "playing") lenis.stop();
       else lenis.start();
@@ -186,8 +175,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Route changes: the page height changed and Next may have reset the native scroll,
-  // so Lenis must re-measure and re-sync, otherwise it keeps (and re-emits) the old offset.
+  // on route change, re-measure and reset scroll so lenis doesn't get stuck
   useEffect(() => {
     const was = prev.current;
     prev.current = pathname;

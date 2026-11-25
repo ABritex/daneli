@@ -34,7 +34,9 @@ export function SpaceBackground() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const narrow = window.matchMedia("(max-width: 900px)").matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, narrow ? 1.5 : 2);
+    const count = narrow ? 70 : PARTICLE_COUNT;
     const reduce =
       !IGNORE_REDUCED_MOTION && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -58,7 +60,7 @@ export function SpaceBackground() {
       return p;
     };
 
-    const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, () => {
+    const particles: Particle[] = Array.from({ length: count }, () => {
       const p = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0 };
       const ttl = (Math.random() * 2 + 1) / (0.01 * FPS_REF);
       return spawn(p, Math.random() * ttl * 0.9);

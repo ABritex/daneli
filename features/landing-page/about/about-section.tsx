@@ -16,7 +16,7 @@ export function AboutSection() {
 
   return (
     <section id="about" ref={sectionRef} className="relative h-[400vh]">
-      <div className="sticky top-0 isolate flex h-dvh items-center overflow-hidden">
+      <div data-stage className="sticky top-0 isolate flex h-dvh items-center overflow-hidden opacity-0">
         <div className="relative mx-auto w-full max-w-7xl">
           <div className="relative flex min-h-[78dvh] items-center justify-center">
             {/* back word, sits behind daniel */}
@@ -47,7 +47,8 @@ export function AboutSection() {
                     alt="Daniel"
                     width={1526}
                     height={1892}
-                    priority
+                    loading="lazy"
+                    fetchPriority="low"
                     sizes="(max-width: 768px) 92vw, 720px"
                     className="h-full w-full object-contain object-bottom"
                   />

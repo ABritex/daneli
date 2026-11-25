@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WorkTransitionProvider } from "@/features/works";
 import { GrainOverlay, IntroSequence, Loader, SiteHeader, SmoothScroll, SpaceBackground } from "@/components/site";
+import { siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,51 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DanEli",
-  description: "DanEli — portfolio",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  creator: siteConfig.creator,
+  publisher: siteConfig.creator,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} portfolio`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 const BOOT = `(function(){var d=document.documentElement;var isHome=location.pathname==="/";d.dataset.loader=isHome?"playing":"skip";if(!isHome){d.dataset.intro="color";d.style.setProperty("--intro-hold","0ms");d.style.setProperty("--intro-shift","0ms");}try{history.scrollRestoration="manual"}catch(e){}try{if(location.hash){history.replaceState(null,"",location.pathname+location.search)}}catch(e){}try{window.scrollTo(0,0)}catch(e){}window.addEventListener("beforeunload",function(){try{window.scrollTo(0,0)}catch(e){}})})();`;

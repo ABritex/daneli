@@ -52,7 +52,7 @@ export function ContactFooter() {
           </p>
         </div>
 
-        <div data-footer-item>
+        <div data-footer-item className="col-span-2 md:col-span-1">
           <p className="text-foreground/45">Drop me a line</p>
           <a
             href={`mailto:${CONTACT_EMAIL}`}
@@ -72,7 +72,7 @@ export function ContactFooter() {
           </p>
         </div>
 
-        <div data-footer-item className="col-span-2 md:col-span-1 md:text-right">
+        <div data-footer-item className="col-span-1 md:col-span-1 md:text-right">
           <p>Designed &amp; built by</p>
           <p className="text-foreground">Daniel Eli © {year || "2026"}</p>
         </div>

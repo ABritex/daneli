@@ -29,6 +29,8 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-[35] h-full w-full"
       />
+      {/* the hook fades / lifts this wrapper for the section in / out (the fixed canvas stays outside it) */}
+      <div data-section-body>
       <div data-head className="mb-14 md:mb-20">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-9">
@@ -53,6 +55,7 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
         {works.map((w) => (
           <WorkCard key={w.id} work={w} onOpen={handleCardClick} />
         ))}
+      </div>
       </div>
     </section>
   );

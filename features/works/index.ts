@@ -1,4 +1,4 @@
-export { works, type Work } from "./data";
+export { getWorkBySlug, getWorkSlug, works, type Work } from "./data";
 export {
   FADE_ATTR,
   PAGE_BG,

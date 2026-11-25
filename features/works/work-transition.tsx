@@ -4,8 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { usePathname, useRouter } from "next/navigation";
 import { gsap } from "gsap";
 
-// card <-> page morph. open grows the card to fullscreen and fades into the page,
-// close shrinks it back into the card.
+// card <-> page morph. open grows card to fullscreen, close shrinks it back.
 
 export const PAGE_BG = "#070707"; // keep same as slug page bg
 export const FADE_ATTR = "data-work-fade";
@@ -36,11 +35,14 @@ export function whenWorkRevealed(cb: () => void): () => void {
   };
 }
 
+type NextInfo = { slug: string; poster: string; video: string };
 type Ctx = {
   open: (href: string, card: HTMLElement, media: HTMLElement) => void;
+  // work page -> next work page: the next work grows out of `from`
+  next: (href: string, info: NextInfo, from: HTMLElement) => void;
   close: () => void;
 };
-const WorkTransitionContext = createContext<Ctx>({ open: () => {}, close: () => {} });
+const WorkTransitionContext = createContext<Ctx>({ open: () => {}, next: () => {}, close: () => {} });
 export const useWorkTransition = () => useContext(WorkTransitionContext);
 
 type Rect = { left: number; top: number; width: number; height: number };
@@ -50,6 +52,7 @@ type Last = {
   poster: string;
   video: string;
   scrollY: number;
+  direct?: boolean; // the first work page was opened by url, so there is no home entry to go back to
   overlay?: Overlay;
   tl?: gsap.core.Timeline;
 };
@@ -149,7 +152,7 @@ const nextFrames = (n: number) =>
     step(n);
   });
 
-// resolves when the card's <video> has a frame (so the WebGL plane can draw), or after maxMs
+// wait for the card video to have a frame, or give up after maxMs
 const videoReady = (media: HTMLElement, maxMs: number) =>
   new Promise<void>((res) => {
     const v = media.querySelector<HTMLVideoElement>("video");
@@ -161,10 +164,10 @@ const videoReady = (media: HTMLElement, maxMs: number) =>
     check();
   });
 
-// the home page things that fade away while a card opens
+// stuff on home that fades out when a card opens
 const HOME_FADE = "#work [data-head], #work [data-rule], #work [data-meta], #work h3, #work canvas";
 
-// same as HOME_FADE but the card canvas stays: it zooms past instead of fading (see open)
+// same thing but keep canvas, canvas zooms instead
 const HOME_FADE_OPEN = "#work [data-head], #work [data-rule], #work [data-meta], #work h3";
 const cardCanvas = () => document.querySelector<HTMLElement>("#work canvas");
 const resetCanvasZoom = () => {
@@ -175,10 +178,10 @@ const resetCanvasZoom = () => {
 // the four fixed site-frame lines (see NavFrameLines)
 const FRAME_LINES = "[data-frame-line]";
 
-// the draw-in currently playing on the frame lines, so a new one can take over
+// current frame line draw anim
 let frameDrawTl: gsap.core.Timeline | undefined;
 
-// the lines are hidden while a morph runs; they are re-drawn once the new page has settled
+// hide frame lines during morph, draw them back in after
 const hideFrameLines = () => {
   frameDrawTl?.kill();
   gsap.killTweensOf(FRAME_LINES);
@@ -193,7 +196,7 @@ const drawFrameLines = () => {
 
   frameDrawTl?.kill();
   gsap.killTweensOf(FRAME_LINES);
-  // take over from the CSS intro animation: lines stay visible, we only reveal them with a clip
+  // take over from css intro, just reveal with clip
   all.forEach((el) => {
     el.style.animation = "none";
     el.style.opacity = "1";
@@ -224,7 +227,7 @@ const drawFrameLines = () => {
   }
 };
 
-// next 16 keeps visited pages mounted, so clean up any leftover transition state
+// cleanup leftover transition stuff
 const resetHomeState = () => {
   gsap.killTweensOf(HOME_FADE);
   gsap.set(HOME_FADE, { opacity: 1 });
@@ -359,6 +362,51 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
     [router], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  /* ------------------------- page -> next page ------------------------- */
+  const next = useCallback(
+    (href: string, info: NextInfo, from: HTMLElement) => {
+      if (busy.current) return;
+      lock();
+      router.prefetch(href);
+      hideFrameLines();
+
+      const rect = from.getBoundingClientRect();
+      const prev = last.current;
+      prev?.tl?.kill();
+      prev?.overlay?.el.remove();
+
+      const ov = makeOverlay({ poster: info.poster, video: info.video }, rect, "0px", 1, 1);
+      const tl = gsap.timeline({ defaults: { overwrite: "auto" } });
+      tl.to(ov.el, { ...fullRect(), duration: 1, ease: "power4.inOut" }, 0)
+        .to(ov.layer, { scale: 1.12, duration: 1, ease: "power4.inOut" }, 0)
+        .to(
+          ov.layer,
+          {
+            keyframes: [
+              { filter: "blur(9px)", duration: 0.4, ease: "power2.in" },
+              { filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
+            ],
+          },
+          0.15,
+        )
+        .to(ov.layer, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.7)
+        // replace, not push: Back from the new page still lands on home
+        .call(() => router.replace(href, { scroll: false }), undefined, PUSH_AT);
+
+      // from here on Back morphs into the card of the work we are on now, not the first one
+      last.current = {
+        slug: info.slug,
+        poster: info.poster,
+        video: info.video,
+        scrollY: prev?.scrollY ?? 0,
+        direct: prev ? prev.direct : true,
+        overlay: ov,
+        tl,
+      };
+    },
+    [router], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   /* ------------------------- page -> card ------------------------- */
   const close = useCallback(() => {
     if (busy.current) return;
@@ -373,7 +421,7 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
       ease: "power2.in",
       // stay locked: the home branch below unlocks when the card has landed
       onComplete: () => {
-        if (last.current) router.back();
+        if (last.current && !last.current.direct) router.back();
         else router.push("/");
       },
     });
@@ -457,6 +505,14 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
         }
         const c = card;
         const m = media;
+        // the first card we opened may not be the one we land on (work -> next work), so clear
+        // every card the open left hidden before hiding the target
+        document
+          .querySelectorAll<HTMLElement>("[data-work][data-transitioning]")
+          .forEach((x) => x.removeAttribute("data-transitioning"));
+        document.querySelectorAll<HTMLElement>("#work [data-media]").forEach((x) => {
+          x.style.visibility = "";
+        });
         c.setAttribute("data-transitioning", "");
         m.style.visibility = "hidden";
 
@@ -525,7 +581,7 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <WorkTransitionContext.Provider value={{ open, close }}>
+    <WorkTransitionContext.Provider value={{ open, next, close }}>
       {children}
     </WorkTransitionContext.Provider>
   );

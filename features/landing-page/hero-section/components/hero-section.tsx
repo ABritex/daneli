@@ -39,7 +39,7 @@ export function HeroSection() {
         >
           <h1
             id="hero-heading"
-            className="font-monument text-[clamp(5rem,18vw,22rem)] font-extrabold uppercase leading-none text-[#e6e5e0] opacity-100"
+            className="font-monument text-[clamp(3.4rem,18vw,22rem)] font-extrabold uppercase leading-none text-[#e6e5e0] opacity-100"
           >
             DANELI
           </h1>

@@ -23,7 +23,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-monument: "Monument Extended", sans-serif;
   --font-screener: "Screener W01", sans-serif;
@@ -455,5 +455,18 @@ html[data-loader="skip"] .nav-item {
 @media (prefers-reduced-motion: reduce) {
   .rgb-btn::after {
     animation: none;
+  }
+}
+
+.work-detail-title {
+  font-size: clamp(1.25rem, 6.3vw, 2rem);
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 768px) {
+  .work-detail-title {
+    font-size: clamp(3rem, 8vw, 7rem);
+    overflow-wrap: normal;
+    word-break: normal;
   }
 }

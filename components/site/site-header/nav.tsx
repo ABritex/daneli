@@ -16,6 +16,30 @@ const idx = (i: number) => ({ "--i": i }) as React.CSSProperties;
 const buttonBase =
   "inline-flex items-center justify-center rounded-[16px] px-5 py-2.5 text-sm font-medium leading-none transition-colors duration-200";
 
+/**
+ * Text roll: on hover the label slides up and out, and a copy slides in from below.
+ * The parent link must carry the `group/roll` class.
+ * `hoverClass` is the colour of the incoming copy (links go from dim to full white).
+ */
+function Roll({ children, hoverClass = "" }: { children: string; hoverClass?: string }) {
+  const move = "transition-transform duration-[450ms] ease-[cubic-bezier(.22,1,.36,1)]";
+  return (
+    <span className="relative inline-flex overflow-hidden">
+      <span
+        className={`block py-[3px] ${move} group-hover/roll:-translate-y-full group-focus-visible/roll:-translate-y-full`}
+      >
+        {children}
+      </span>
+      <span
+        aria-hidden="true"
+        className={`absolute inset-0 block translate-y-full py-[3px] ${move} ${hoverClass} group-hover/roll:translate-y-0 group-focus-visible/roll:translate-y-0`}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
 export function Nav() {
   const pathname = usePathname();
   const isActive = (href: string) => {
@@ -35,9 +59,9 @@ export function Nav() {
               key={item.href}
               href={item.href}
               style={idx(i + 1)}
-              className="nav-item px-2.5 py-2 text-sm font-medium leading-none text-foreground/55 transition-colors duration-200 hover:text-foreground"
+              className="nav-item group/roll px-2.5 py-2 text-sm font-medium leading-none text-foreground/55"
             >
-              {item.label}
+              <Roll hoverClass="text-foreground">{item.label}</Roll>
             </Link>
           ))}
         </div>
@@ -46,18 +70,18 @@ export function Nav() {
           href={SECONDARY.href}
           style={idx(3)}
           aria-current={isActive(SECONDARY.href) ? "page" : undefined}
-          className={`nav-item ${buttonBase} border border-foreground/25 text-foreground hover:bg-foreground/10`}
+          className={`nav-item group/roll ${buttonBase} border border-foreground/25 text-foreground hover:bg-foreground/10`}
         >
-          {SECONDARY.label}
+          <Roll>{SECONDARY.label}</Roll>
         </Link>
 
         <span style={idx(4)} className="nav-item inline-flex">
           <Link
             href={PRIMARY.href}
             aria-current={isActive(PRIMARY.href) ? "page" : undefined}
-            className={`rgb-btn relative ${buttonBase} bg-foreground text-background hover:bg-foreground/85`}
+            className={`group/roll rgb-btn relative ${buttonBase} bg-foreground text-background hover:bg-foreground/85`}
           >
-            {PRIMARY.label}
+            <Roll>{PRIMARY.label}</Roll>
           </Link>
         </span>
       </div>

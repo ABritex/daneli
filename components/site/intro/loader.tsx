@@ -7,13 +7,13 @@ import { gsap } from "gsap";
 
 const HOLD_MS = 700;        // minimum time the light screen holds before the dot can appear
 const HERO_MAX_WAIT_MS = 12000; // never keep people on the loader longer than this, even if the model is slow
+const HERO_MAX_WAIT_MS_MOBILE = 6000;
 const GROW_MS = 1300;       // one continuous growth: scale 0 -> full screen
 const SNAP_AT_MS = 450;     // when the real page starts fading in underneath
 const ORIGIN_X = 0.5;       // fraction of viewport width
 const ORIGIN_Y = 0.58;      // fraction of viewport height (just under the word's centre)
 
-// Softness (feather) of the edge, in px. Eases in from 0 so the dot is born
-// from nothing instead of popping in as a blur.
+// edge softness, ramps in so it doesn't pop
 const SOFTNESS = 400;       // max edge softness
 const SOFTNESS_RAMP = 220;  // radius (px) at which the full softness is reached
 
@@ -66,7 +66,7 @@ export function Loader() {
     const h = window.innerHeight;
     const ox = w * ORIGIN_X;
     const oy = h * ORIGIN_Y;
-    // distance to the farthest corner = radius needed to clear the screen
+    // radius needed to cover the whole screen
     const maxR = Math.hypot(Math.max(ox, w - ox), Math.max(oy, h - oy));
 
     const setMask = (el: HTMLElement, value: string) => {
@@ -74,7 +74,7 @@ export function Loader() {
       el.style.setProperty("-webkit-mask-image", value);
     };
 
-    // r = radius of the fully-open hole, feather grows with size
+    // r = hole radius, feather grows with it
     const apply = (r: number) => {
       const t = Math.min(1, r / SOFTNESS_RAMP);
       const f = SOFTNESS * t * t * (3 - 2 * t); // smoothstep: 0 -> SOFTNESS
@@ -82,24 +82,23 @@ export function Loader() {
       setMask(cover, `radial-gradient(${at}, transparent 0, transparent ${r}px, #000 ${r + f}px)`);
       setMask(ink, `radial-gradient(${at}, #000 0, #000 ${r}px, transparent ${r + f}px)`);
       if (FX_HALO && halo) {
-        // glow sits on the revealed side of the edge, fades as the circle leaves the screen
+        // glow on the edge, fades out as it grows
         const a = 0.16 * (1 - Math.min(1, r / maxR));
         halo.style.opacity = "1";
         halo.style.background = `radial-gradient(${at}, transparent 0, transparent ${r * 0.9}px, rgba(255,255,255,${a}) ${r + f * 0.35}px, transparent ${r + f * 1.8}px)`;
       }
     };
 
-    // grain flickers by hopping its tile around
+    // flicker grain by moving it around
     const jitterGrain = () => {
       if (grain) grain.style.backgroundPosition = `${Math.random() * 180}px ${Math.random() * 180}px`;
     };
 
     const timers: number[] = [];
-    // the hero word fades in over --intro-shift (starts at SNAP_AT_MS);
-    // keep the loader word on top until that's done so the swap is invisible
+    // keep loader word up until hero word finishes fading in
     const shiftMs = parseFloat(getComputedStyle(root).getPropertyValue("--intro-shift")) || 1500;
 
-    // snap the page underneath to the real palette (no transition, no black blink)
+    // snap palette underneath, no transition blink
     const snapPalette = (finish: boolean) => {
       try {
         const prevTransition = root.style.transition;
@@ -123,8 +122,7 @@ export function Loader() {
       if (FX_GRAIN) jitterGrain();
     };
 
-    /* paused: it only starts once the minimum hold has passed AND the hero reports it is ready
-       (model + textures loaded, GPU warmed). slow PCs just see the wordmark a little longer */
+    // wait for hold + hero ready, then start
     const counter = { v: 0 };
     const setCount = (v: number) => {
       const t = String(Math.round(v)).padStart(2, "0");
@@ -153,10 +151,11 @@ export function Loader() {
       tl.play();
     };
     window.addEventListener("daneli-hero-ready", tryStart);
+    const heroMaxWait = window.matchMedia("(max-width: 768px)").matches ? HERO_MAX_WAIT_MS_MOBILE : HERO_MAX_WAIT_MS;
     timers.push(window.setTimeout(() => { holdDone = true; tryStart(); }, HOLD_MS));
-    timers.push(window.setTimeout(() => { holdDone = true; forced = true; tryStart(); }, HERO_MAX_WAIT_MS));
+    timers.push(window.setTimeout(() => { holdDone = true; forced = true; tryStart(); }, heroMaxWait));
 
-    // 1. one continuous growth, scale 0 -> full screen (slow start, fast finish)
+    // grow the hole out
     tl.call(() => {
       ink.style.opacity = "1";
       apply(0);
@@ -169,15 +168,15 @@ export function Loader() {
       onUpdate: update,
     }, growAt);
 
-    // 2. partway through, the real page starts fading in underneath
+    // start showing the real page underneath
     tl.call(() => snapPalette(false), [], `<+=${SNAP_AT_MS / 1000}`);
 
-    // 3. release app state; keep the light DANELI one beat to avoid a handoff pulse
+    // hand off to the real page
     tl.call(() => {
       snapPalette(true);
       document.body.style.overflow = prevOverflow;
       window.dispatchEvent(new Event("daneli-loader-done"));
-      // light screen is fully open: stop compositing it, leave only the word
+      // light screen done, just keep the word for a beat
       cover.style.display = "none";
       if (halo) halo.style.display = "none";
       const remaining = Math.max(180, shiftMs - (GROW_MS - SNAP_AT_MS) + 60);
@@ -198,7 +197,7 @@ export function Loader() {
   if (!visible) return null;
 
   const wordClass =
-    "font-monument text-[clamp(5rem,18vw,22rem)] font-extrabold uppercase leading-none select-none";
+    "font-monument text-[clamp(3.4rem,18vw,22rem)] font-extrabold uppercase leading-none select-none";
   const centre: React.CSSProperties = {
     position: "absolute",
     inset: 0,

@@ -29,17 +29,19 @@ type Plane = {
   el: HTMLElement;
   video: HTMLVideoElement;
   tex: THREE.VideoTexture;
+  poster: THREE.Texture | null; // shown until the video has a decoded frame
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   appear: number | null;
+  lastT: number;
   hover: { v: number; target: number; mx: number; my: number; tmx: number; tmy: number };
 };
 
-// main hook for the featured works canvas scene
+// drives the featured works webgl scene
 export function useWorkScene() {
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // lazy-load + play / pause videos by visibility (after the loader)
+  // lazy load/play videos when they come into view
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -86,7 +88,7 @@ export function useWorkScene() {
         renderer = new THREE.WebGLRenderer({
           canvas,
           alpha: true,
-          antialias: true,
+          antialias: window.devicePixelRatio < 2,
           powerPreference: "high-performance",
         });
       } catch {
@@ -95,14 +97,15 @@ export function useWorkScene() {
       }
 
       const planes: Plane[] = [];
-      /* GSAP fades / moves this wrapper for the section in / out; the canvas planes mirror it below */
+      // gsap moves this wrapper, canvas follows it
       const sectionBody = root.querySelector<HTMLElement>("[data-section-body]");
       const canHover = window.matchMedia("(hover: hover)").matches;
+      const narrow = window.matchMedia("(max-width: 900px)").matches;
       let tick: ((time: number, deltaMs: number) => void) | null = null;
       let onResize: (() => void) | null = null;
       const reduceMotion =
         !IGNORE_REDUCED_MOTION && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // dense enough in both directions to carry the bend smoothly
+      // enough segments for the bend to look smooth
       const geometry = new THREE.PlaneGeometry(1, 1, 40, 40);
 
       if (renderer) {
@@ -114,9 +117,9 @@ export function useWorkScene() {
         onResize = () => {
           const w = window.innerWidth;
           const h = window.innerHeight;
-          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, narrow ? 1.5 : 2));
           gl.setSize(w, h, false);
-          // fov chosen so the z = 0 plane maps 1 world unit to 1 css px
+          // fov so 1 world unit = 1 css px
           camera.fov = (2 * Math.atan(h / 2 / CAM_DIST) * 180) / Math.PI;
           camera.aspect = w / h;
           camera.position.set(0, 0, CAM_DIST);
@@ -125,6 +128,7 @@ export function useWorkScene() {
         onResize();
         window.addEventListener("resize", onResize);
 
+        const posterLoader = new THREE.TextureLoader();
         medias.forEach((el) => {
           const video = el.querySelector<HTMLVideoElement>("video");
           if (!video) return;
@@ -151,14 +155,25 @@ export function useWorkScene() {
               uAmp: { value: reduceMotion ? 0 : 1 },
             },
           });
+          let poster: THREE.Texture | null = null;
+          const posterUrl = el.closest<HTMLElement>("[data-work]")?.dataset.poster;
+          if (posterUrl) {
+            posterLoader.load(posterUrl, (t) => {
+              t.minFilter = THREE.LinearFilter;
+              t.generateMipmaps = false;
+              const entry = planes.find((q) => q.el === el);
+              if (entry) entry.poster = t;
+              else t.dispose();
+            });
+          }
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
           scene.add(mesh);
           video.style.opacity = "0"; // the canvas draws it now
           const hover = { v: 0, target: 0, mx: 0, my: 0, tmx: 0, tmy: 0 };
-          planes.push({ el, video, tex, mesh, appear: null, hover });
+          planes.push({ el, video, tex, poster, mesh, appear: null, lastT: -1, hover });
 
-          // hover only changes what is drawn INSIDE the card; the card never transforms
+          // hover just affects the texture inside, card itself stays put
           if (canHover) {
             const card = el.closest("[data-work]");
             const setMouse = (e: PointerEvent) => {
@@ -183,7 +198,6 @@ export function useWorkScene() {
         let lastY = window.scrollY;
         let rawVel = 0; // px / s, low-passed
         const spring = { x: 0, v: 0 };
-
         tick = (_time, deltaMs) => {
           const dt = Math.min(deltaMs / 1000, 0.05) || 1 / 60;
           const vw = window.innerWidth;
@@ -205,10 +219,21 @@ export function useWorkScene() {
           for (const p of planes) {
             const r = p.el.getBoundingClientRect();
             const hiddenByTransition = p.el.closest("[data-work]")?.hasAttribute("data-transitioning");
+            // video frame when there is one, poster otherwise, so a card never goes blank
+            const videoOk = p.video.readyState >= 2;
+            const src: THREE.Texture | null = videoOk ? p.tex : p.poster;
             const on =
-              !hiddenByTransition && bodyAlpha > 0.01 && r.bottom > -160 && r.top < vh + 160 && p.video.readyState >= 2;
+              !hiddenByTransition && !!src && bodyAlpha > 0.01 && r.bottom > -160 && r.top < vh + 160;
             p.mesh.visible = on;
             if (!on) continue;
+
+            // keep the texture alive: a video that was paused (visibility:hidden, tab / route change,
+            // the loader) is restarted, and a frozen VideoTexture is forced to re-upload
+            if (p.video.src && p.video.paused && !p.video.ended) p.video.play().catch(() => {});
+            if (videoOk && p.video.currentTime !== p.lastT) {
+              p.lastT = p.video.currentTime;
+              p.tex.needsUpdate = true;
+            }
 
             // entrance: scroll-linked grow from a slightly smaller card, softened by damping
             // measured from the bottom edge (scrolling down) AND the top edge (scrolling up),
@@ -230,9 +255,13 @@ export function useWorkScene() {
             p.mesh.position.set(r.left + r.width / 2 - vw / 2, -(r.top + r.height / 2 - vh / 2), 0);
             p.mesh.scale.set(r.width * s, r.height * s, 1);
 
-            const va = p.video.videoWidth ? p.video.videoWidth / p.video.videoHeight : 16 / 9;
+            const img = src.image as { width?: number; height?: number } | undefined;
+            const va = videoOk && p.video.videoWidth
+              ? p.video.videoWidth / p.video.videoHeight
+              : img?.width && img?.height ? img.width / img.height : 16 / 9;
             const pa = r.width / r.height;
             const u = p.mesh.material.uniforms;
+            u.uTex.value = src;
             (u.uUvScale.value as THREE.Vector2).set(va > pa ? pa / va : 1, va > pa ? 1 : va / pa);
             (u.uSize.value as THREE.Vector2).set(r.width * s, r.height * s);
 
@@ -275,7 +304,7 @@ export function useWorkScene() {
               );
           }
 
-          gsap.fromTo(
+          if (root.querySelector("[data-rule]")) gsap.fromTo(
             "[data-rule]",
             { scaleX: 0 },
             {
@@ -349,6 +378,7 @@ export function useWorkScene() {
         if (onResize) window.removeEventListener("resize", onResize);
         planes.forEach((p) => {
           p.tex.dispose();
+          p.poster?.dispose();
           p.mesh.material.dispose();
           p.video.style.opacity = "";
         });

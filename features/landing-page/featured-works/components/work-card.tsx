@@ -51,7 +51,7 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
       </div>
       <div
         data-meta
-        className="mt-4 flex gap-2 text-xs uppercase tracking-[0.5em] font-bold items-start text-left"
+        className="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-left text-[10px] font-bold uppercase tracking-[0.28em] sm:text-xs sm:tracking-[0.5em]"
       >
         {w.tags.map((t, k) => (
           <span key={t} className="flex items-center gap-2">

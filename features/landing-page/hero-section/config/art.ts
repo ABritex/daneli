@@ -1,4 +1,7 @@
 import { works } from "@/features/works";
 
 export const ART = works.map((w) => w.media);
+export const ART_MOBILE = works.map((w) =>
+  w.media.replace("/works/posters/", "/works/posters/mobile/").replace(/\.jpg$/, ".webp"),
+);
 export const ART_COUNT = ART.length;
