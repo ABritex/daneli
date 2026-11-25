@@ -9,18 +9,19 @@ let frameDrawTl: gsap.core.Timeline | undefined;
 // the lines are hidden while a morph runs; they are re-drawn once the new page has settled
 export const hideFrameLines = () => {
   frameDrawTl?.kill();
-  gsap.killTweensOf(FRAME_LINES);
-  gsap.to(FRAME_LINES, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
+  const all = document.querySelectorAll(FRAME_LINES);
+  if (!all.length) return;
+  gsap.killTweensOf(all);
+  gsap.to(all, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
 };
 
 export const drawFrameLines = () => {
   const xs = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-x`));
   const ys = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-y`));
   const all = [...xs, ...ys];
-  if (!all.length) return;
-
   frameDrawTl?.kill();
-  gsap.killTweensOf(FRAME_LINES);
+  if (!all.length) return;
+  gsap.killTweensOf(all);
   // take over from css intro, just reveal with clip
   all.forEach((el) => {
     el.style.animation = "none";

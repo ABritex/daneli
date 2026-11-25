@@ -121,11 +121,14 @@ export function SiteHeader() {
   const onMenuLink = (e: React.MouseEvent, href: string) => {
     setOpen(false);
     if (pathname !== "/" || !href.startsWith("/#")) return;
-    const target = document.querySelector(href.slice(1));
-    const lenis = getLenis();
-    if (!target || !lenis) return;
+    const target = document.querySelector<HTMLElement>(href.slice(1));
+    if (!target) return;
     e.preventDefault();
-    window.setTimeout(() => lenis.scrollTo(target as HTMLElement, { duration: 1.6 }), 350);
+    const lenis = getLenis();
+    window.setTimeout(() => {
+      if (lenis) lenis.scrollTo(target, { duration: 1.6 });
+      else target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 350);
   };
 
   const barBase =

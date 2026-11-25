@@ -15,7 +15,7 @@ export function initWorkScrollAnimations(root: HTMLElement, planes: Plane[], sec
   /* ------------------------ GSAP scroll effects ------------------------ */
   const mm = gsap.matchMedia();
   mm.add(
-    "(prefers-reduced-motion: no-preference)",
+    "(prefers-reduced-motion: no-preference) and (min-width: 768px)",
     () => {
       /* whole-section transition, scrubbed to the scroll position (reverses when you scroll back).
          IN starts while the hero is still dissolving; OUT overlaps About drawing itself in */

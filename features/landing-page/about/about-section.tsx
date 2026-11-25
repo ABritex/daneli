@@ -35,7 +35,7 @@ export function AboutSection() {
               <div
                 ref={imageWrapRef}
                 data-image-wrap
-                className="relative aspect-[1526/1892] h-[min(96svh,calc(96vw*1.2398))] shrink-0 will-change-transform"
+                className="relative aspect-[1526/1892] h-[min(125svh,calc(155vw*1.2398))] shrink-0 will-change-transform md:h-[min(96svh,calc(96vw*1.2398))]"
               >
                 <div
                   data-image

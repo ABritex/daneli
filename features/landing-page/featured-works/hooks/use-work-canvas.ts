@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { gsap } from "@/lib/gsap";
 import { clamp, damp, scrambleCardTags } from "@/lib/animations";
-import { MQ_HOVER, MQ_NARROW_900, MQ_REDUCED_MOTION, mediaMatches } from "@/lib/media";
+import { MQ_DESKTOP_768, MQ_HOVER, MQ_NARROW_900, MQ_REDUCED_MOTION, mediaMatches } from "@/lib/media";
 import {
   CAM_DIST,
   CARD_RADIUS,
@@ -46,6 +46,7 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
   const sectionBody = root.querySelector<HTMLElement>("[data-section-body]");
   const canHover = mediaMatches(MQ_HOVER);
   const narrow = mediaMatches(MQ_NARROW_900);
+  const mobile = !mediaMatches(MQ_DESKTOP_768);
   let tick: ((time: number, deltaMs: number) => void) | null = null;
   let onResize: (() => void) | null = null;
   const reduceMotion =
@@ -180,16 +181,21 @@ export function initWorkCanvas(root: HTMLElement, canvas: HTMLCanvasElement) {
           p.tex.needsUpdate = true;
         }
 
-        // entrance: scroll-linked grow from a slightly smaller card, softened by damping
-        // measured from the bottom edge (scrolling down) AND the top edge (scrolling up),
-        // so the grow-in plays the same in both directions
-        const kBottom = clamp((vh - r.top) / (vh * ENTER_RANGE), 0, 1);
-        const kTop = SCALE_FROM_TOP ? clamp(r.bottom / (vh * ENTER_RANGE), 0, 1) : 1;
-        const k = Math.min(kBottom, kTop);
-        const eased = 1 - Math.pow(1 - k, 3);
-        if (p.appear === null) p.appear = eased;
-        p.appear += (eased - p.appear) * damp(ENTER_SMOOTH, dt);
-        const s = ENTER_SCALE + (1 - ENTER_SCALE) * p.appear;
+        // entrance: scroll-linked grow on desktop; static on mobile
+        let s = 1;
+        if (mobile) {
+          p.appear = 1;
+        } else {
+          // measured from the bottom edge (scrolling down) AND the top edge (scrolling up),
+          // so the grow-in plays the same in both directions
+          const kBottom = clamp((vh - r.top) / (vh * ENTER_RANGE), 0, 1);
+          const kTop = SCALE_FROM_TOP ? clamp(r.bottom / (vh * ENTER_RANGE), 0, 1) : 1;
+          const k = Math.min(kBottom, kTop);
+          const eased = 1 - Math.pow(1 - k, 3);
+          if (p.appear === null) p.appear = eased;
+          p.appear += (eased - p.appear) * damp(ENTER_SMOOTH, dt);
+          s = ENTER_SCALE + (1 - ENTER_SCALE) * p.appear;
+        }
 
         // hover easing (zoom + cursor drift inside the card)
         const h = p.hover;
