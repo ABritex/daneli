@@ -3,10 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 
 const SPHERES = [
   { radius: 4.4, speed: 0.2, phase: 0, tilt: [0.35, 0.18], r: 0.95, spin: [0.22, 0.31] },

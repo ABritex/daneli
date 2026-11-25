@@ -34,9 +34,11 @@ export function FeaturedWorks({ works }: { works: Work[] }) {
       <div data-head className="mb-14 md:mb-20">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-9">
-            <div className="[&_*]:font-monument [&_*]:text-[clamp(2.4rem,8.6vw,8rem)] [&_*]:font-extrabold [&_*]:uppercase [&_*]:leading-[0.95] [&_*]:tracking-normal">
-              <FeaturedTitle text="Featured Work" variant="reveal" />
-            </div>
+            <FeaturedTitle
+              text="Featured Work"
+              variant="reveal"
+              className="text-[clamp(2.4rem,8.6vw,8rem)]"
+            />
           </div>
 
           <div className="flex flex-col justify-end pt-5 md:col-span-3 md:pl-6 md:pt-0">

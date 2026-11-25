@@ -3,37 +3,33 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { gsap } from "gsap";
+import {
+  FADE_ATTR,
+  PAGE_BG,
+  REVEAL_EVENT,
+  WORK_CARD_ATTR,
+  WORK_MEDIA_ATTR,
+  WORK_OVERLAY_ATTR,
+  WORK_REVEALED_ATTR,
+  WORK_TRANSITIONING_ATTR,
+} from "./constants";
+import { drawFrameLines, hideFrameLines } from "./lib/frame-lines";
+import { lenis, setScroll } from "./lib/lenis";
+import {
+  clearCardTransitionState,
+  fullRect,
+  makeOverlay,
+  nextFrames,
+  videoReady,
+  type Overlay,
+  type Rect,
+} from "./lib/work-overlay";
 
 // card <-> page morph. open grows card to fullscreen, close shrinks it back.
 
-export const PAGE_BG = "#070707"; // keep same as slug page bg
-export const FADE_ATTR = "data-work-fade";
+export { FADE_ATTR, PAGE_BG };
 
-const OVERLAY_Z = "39"; // above card canvas, below site header
-
-const REVEAL_EVENT = "work:reveal";
-const PAUSE_EVENT = "work:pause"; // WarpedCard listens: detail=true stops rendering/decoding
 const PUSH_AT = 1; // seconds into the open timeline when the route is pushed
-
-// slug page waits for the overlay to fade before starting its entrance
-export function whenWorkRevealed(cb: () => void): () => void {
-  if (!document.querySelector("[data-work-overlay]:not([data-revealed])")) {
-    cb();
-    return () => {};
-  }
-  let t = 0;
-  const run = () => {
-    window.clearTimeout(t);
-    window.removeEventListener(REVEAL_EVENT, run);
-    cb();
-  };
-  t = window.setTimeout(run, 2500); // never leave the page invisible
-  window.addEventListener(REVEAL_EVENT, run, { once: true });
-  return () => {
-    window.clearTimeout(t);
-    window.removeEventListener(REVEAL_EVENT, run);
-  };
-}
 
 type NextInfo = { slug: string; poster: string; video: string };
 type Ctx = {
@@ -45,8 +41,6 @@ type Ctx = {
 const WorkTransitionContext = createContext<Ctx>({ open: () => {}, next: () => {}, close: () => {} });
 export const useWorkTransition = () => useContext(WorkTransitionContext);
 
-type Rect = { left: number; top: number; width: number; height: number };
-type Overlay = { el: HTMLDivElement; layer: HTMLDivElement };
 type Last = {
   slug: string;
   poster: string;
@@ -56,189 +50,63 @@ type Last = {
   overlay?: Overlay;
   tl?: gsap.core.Timeline;
 };
-type LenisLike = {
-  stop(): void;
-  start(): void;
-  resize?(): void;
-  scrollTo(t: number, o?: Record<string, unknown>): void;
-};
 
-const lenis = () => (window as unknown as { __lenis?: LenisLike }).__lenis;
-const pauseCards = (paused: boolean) =>
-  window.dispatchEvent(new CustomEvent(PAUSE_EVENT, { detail: paused }));
 
-// Lenis owns the scroll position, so always go through it
-const setScroll = (y: number) => {
-  const l = lenis();
-  if (l) {
-    l.resize?.();
-    l.scrollTo(y, { immediate: true, force: true });
-  } else {
-    window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior });
-  }
-};
-
-const fullRect = (): Rect => ({
-  left: 0,
-  top: 0,
-  width: window.innerWidth,
-  height: window.innerHeight,
-});
-
-function makeOverlay(
-  o: { poster: string; video: string; time?: number },
-  r: Rect,
-  radius: string,
-  layerOpacity: number,
-  layerScale: number,
-): Overlay {
-  const el = document.createElement("div");
-  el.setAttribute("data-work-overlay", "");
-  Object.assign(el.style, {
-    position: "fixed",
-    left: `${r.left}px`,
-    top: `${r.top}px`,
-    width: `${r.width}px`,
-    height: `${r.height}px`,
-    borderRadius: radius,
-    overflow: "hidden",
-    isolation: "isolate", // keeps rounded clipping correct on the promoted child layer (Safari)
-    zIndex: OVERLAY_Z,
-    background: PAGE_BG,
-    pointerEvents: "none",
-    contain: "layout paint",
-  });
-
-  const layer = document.createElement("div");
-  layer.style.cssText = `position:absolute;inset:0;opacity:${layerOpacity};transform:scale(${layerScale});will-change:transform,opacity`;
-  const cover = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block";
-
-  const img = document.createElement("img");
-  img.src = o.poster;
-  img.alt = "";
-  img.decoding = "async";
-  img.style.cssText = cover;
-  layer.appendChild(img);
-
-  if (o.video) {
-    const v = document.createElement("video");
-    v.preload = "auto";
-    v.src = o.video;
-    v.muted = true;
-    v.loop = true;
-    v.playsInline = true;
-    v.autoplay = true;
-    v.style.cssText = `${cover};opacity:0;transition:opacity .25s`;
-    v.addEventListener(
-      "loadeddata",
-      () => {
-        if (o.time) v.currentTime = o.time;
-        v.style.opacity = "1";
-        v.play().catch(() => {});
-      },
-      { once: true },
-    );
-    layer.appendChild(v);
-  }
-
-  el.appendChild(layer);
-  document.body.appendChild(el);
-  return { el, layer };
-}
-
-const nextFrames = (n: number) =>
-  new Promise<void>((res) => {
-    const step = (i: number) => (i <= 0 ? res() : requestAnimationFrame(() => step(i - 1)));
-    step(n);
-  });
-
-// wait for the card video to have a frame, or give up after maxMs
-const videoReady = (media: HTMLElement, maxMs: number) =>
-  new Promise<void>((res) => {
-    const v = media.querySelector<HTMLVideoElement>("video");
-    const start = performance.now();
-    const check = () => {
-      if (!v || v.readyState >= 2 || performance.now() - start > maxMs) return res();
-      requestAnimationFrame(check);
-    };
-    check();
-  });
 
 // stuff on home that fades out when a card opens
-const HOME_FADE = "#work [data-head], #work [data-rule], #work [data-meta], #work h3, #work canvas";
-
-// same thing but keep canvas, canvas zooms instead
-const HOME_FADE_OPEN = "#work [data-head], #work [data-rule], #work [data-meta], #work h3";
+const HOME_FADE_OPEN = "#work [data-head], #work [data-meta], #work h3";
+const HOME_FADE = `${HOME_FADE_OPEN}, #work canvas`;
 const cardCanvas = () => document.querySelector<HTMLElement>("#work canvas");
 const resetCanvasZoom = () => {
   const c = cardCanvas();
   if (c) gsap.set(c, { clearProps: "transform,transformOrigin" });
 };
-
-// the four fixed site-frame lines (see NavFrameLines)
-const FRAME_LINES = "[data-frame-line]";
-
-// current frame line draw anim
-let frameDrawTl: gsap.core.Timeline | undefined;
-
-// hide frame lines during morph, draw them back in after
-const hideFrameLines = () => {
-  frameDrawTl?.kill();
-  gsap.killTweensOf(FRAME_LINES);
-  gsap.to(FRAME_LINES, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
-};
-
-const drawFrameLines = () => {
-  const xs = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-x`));
-  const ys = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-y`));
-  const all = [...xs, ...ys];
-  if (!all.length) return;
-
-  frameDrawTl?.kill();
-  gsap.killTweensOf(FRAME_LINES);
-  // take over from css intro, just reveal with clip
-  all.forEach((el) => {
-    el.style.animation = "none";
-    el.style.opacity = "1";
-    el.style.transform = "none";
-  });
-
-  frameDrawTl = gsap.timeline({
-    defaults: { duration: 0.9, ease: "power3.inOut" },
-    onComplete: () => all.forEach((el) => (el.style.clipPath = "")),
-  });
-  // horizontals: left -> right
-  if (xs.length) {
-    frameDrawTl.fromTo(
-      xs,
-      { clipPath: "inset(0% 100% 0% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 },
+function playExpandTimeline(
+  ov: Overlay,
+  { borderRadius, tilt, navigate }: { borderRadius?: string | number; tilt?: boolean; navigate: () => void },
+) {
+  const tl = gsap.timeline({ defaults: { overwrite: "auto" } });
+  tl.to(
+    ov.el,
+    { ...fullRect(), ...(borderRadius !== undefined ? { borderRadius } : {}), duration: 1, ease: "power4.inOut" },
+    0,
+  ).to(ov.layer, { scale: 1.12, duration: 1, ease: "power4.inOut" }, 0);
+  if (tilt) {
+    tl.to(
+      ov.el,
+      {
+        keyframes: [
+          { rotation: -1.8, duration: 0.45, ease: "power2.out" },
+          { rotation: 0, duration: 0.55, ease: "power2.inOut" },
+        ],
+      },
       0,
     );
   }
-  // verticals: top -> bottom
-  if (ys.length) {
-    frameDrawTl.fromTo(
-      ys,
-      { clipPath: "inset(0% 0% 100% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 },
-      0.15,
-    );
-  }
-};
+  tl.to(
+    ov.layer,
+    {
+      keyframes: [
+        { filter: "blur(9px)", duration: 0.4, ease: "power2.in" },
+        { filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
+      ],
+    },
+    0.15,
+  )
+    .to(ov.layer, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.7)
+    .call(navigate, undefined, PUSH_AT);
+  return tl;
+}
+
+
+
 
 // cleanup leftover transition stuff
 const resetHomeState = () => {
   gsap.killTweensOf(HOME_FADE);
   gsap.set(HOME_FADE, { opacity: 1 });
   resetCanvasZoom();
-  document
-    .querySelectorAll<HTMLElement>("[data-work][data-transitioning]")
-    .forEach((card) => card.removeAttribute("data-transitioning"));
-  document.querySelectorAll<HTMLElement>("#work [data-media]").forEach((media) => {
-    media.style.visibility = "";
-  });
-  pauseCards(false);
+  clearCardTransitionState();
 };
 
 export function WorkTransitionProvider({ children }: { children: React.ReactNode }) {
@@ -252,7 +120,6 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
   const unlock = () => {
     window.clearTimeout(safety.current);
     busy.current = false;
-    pauseCards(false); // if we bail out on the home page, the cards must come back to life
     lenis()?.start();
   };
   const lock = () => {
@@ -306,41 +173,16 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
       last.current = null;
 
       const ov = makeOverlay({ poster, video, time: srcVideo?.currentTime }, rect, radius, 1, 1);
-      card.setAttribute("data-transitioning", "");
+      card.setAttribute(WORK_TRANSITIONING_ATTR, "");
       media.style.visibility = "hidden";
 
-      // stop the 10 WebGL planes + their video decoders: the overlay covers them anyway
-      pauseCards(true);
       gsap.to(HOME_FADE_OPEN, { opacity: 0, duration: 0.45, ease: "power2.out", overwrite: true });
 
-      const tl = gsap.timeline({ defaults: { overwrite: "auto" } });
-      tl.to(ov.el, { ...fullRect(), borderRadius: 0, duration: 1, ease: "power4.inOut" }, 0)
-        .to(ov.layer, { scale: 1.12, duration: 1, ease: "power4.inOut" }, 0)
-        // a little tilt that settles flat as the card fills the screen
-        .to(
-          ov.el,
-          {
-            keyframes: [
-              { rotation: -1.8, duration: 0.45, ease: "power2.out" },
-              { rotation: 0, duration: 0.55, ease: "power2.inOut" },
-            ],
-          },
-          0,
-        )
-        // motion blur that builds, then clears
-        .to(
-          ov.layer,
-          {
-            keyframes: [
-              { filter: "blur(9px)", duration: 0.4, ease: "power2.in" },
-              { filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
-            ],
-          },
-          0.15,
-        )
-        .to(ov.layer, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.7)
-        // push while the dissolve is still running instead of waiting for the end
-        .call(() => router.push(href, { scroll: false }), undefined, PUSH_AT);
+      const tl = playExpandTimeline(ov, {
+        borderRadius: 0,
+        tilt: true,
+        navigate: () => router.push(href, { scroll: false }),
+      });
 
       // the other cards (drawn on the shared canvas) zoom away from the clicked card
       const gl = cardCanvas();
@@ -376,22 +218,9 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
       prev?.overlay?.el.remove();
 
       const ov = makeOverlay({ poster: info.poster, video: info.video }, rect, "0px", 1, 1);
-      const tl = gsap.timeline({ defaults: { overwrite: "auto" } });
-      tl.to(ov.el, { ...fullRect(), duration: 1, ease: "power4.inOut" }, 0)
-        .to(ov.layer, { scale: 1.12, duration: 1, ease: "power4.inOut" }, 0)
-        .to(
-          ov.layer,
-          {
-            keyframes: [
-              { filter: "blur(9px)", duration: 0.4, ease: "power2.in" },
-              { filter: "blur(0px)", duration: 0.5, ease: "power2.out" },
-            ],
-          },
-          0.15,
-        )
-        .to(ov.layer, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.7)
-        // replace, not push: Back from the new page still lands on home
-        .call(() => router.replace(href, { scroll: false }), undefined, PUSH_AT);
+      const tl = playExpandTimeline(ov, {
+        navigate: () => router.replace(href, { scroll: false }),
+      });
 
       // from here on Back morphs into the card of the work we are on now, not the first one
       last.current = {
@@ -449,7 +278,7 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
 
       const reveal = () => {
         // tell the page to start its entrance, and fade the (page-coloured) overlay away
-        ov.el.setAttribute("data-revealed", "");
+        ov.el.setAttribute(WORK_REVEALED_ATTR, "");
         window.dispatchEvent(new Event(REVEAL_EVENT));
         gsap.to(ov.el, {
           opacity: 0,
@@ -492,8 +321,8 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
         let card: HTMLElement | null = null;
         let media: HTMLElement | null = null;
         for (let i = 0; i < 90 && !(card && media); i++) {
-          card = document.querySelector<HTMLElement>(`[data-work-card="${l.slug}"]`);
-          media = card?.querySelector<HTMLElement>("[data-media]") ?? null;
+          card = document.querySelector<HTMLElement>(`[${WORK_CARD_ATTR}="${l.slug}"]`);
+          media = card?.querySelector<HTMLElement>(`[${WORK_MEDIA_ATTR}]`) ?? null;
           if (!(card && media)) await nextFrames(1);
         }
         if (!card || !media) {
@@ -507,13 +336,8 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
         const m = media;
         // the first card we opened may not be the one we land on (work -> next work), so clear
         // every card the open left hidden before hiding the target
-        document
-          .querySelectorAll<HTMLElement>("[data-work][data-transitioning]")
-          .forEach((x) => x.removeAttribute("data-transitioning"));
-        document.querySelectorAll<HTMLElement>("#work [data-media]").forEach((x) => {
-          x.style.visibility = "";
-        });
-        c.setAttribute("data-transitioning", "");
+        clearCardTransitionState();
+        c.setAttribute(WORK_TRANSITIONING_ATTR, "");
         m.style.visibility = "hidden";
 
         // restore the home content that was faded out on open (fresh mount, so make sure)
@@ -533,7 +357,7 @@ export function WorkTransitionProvider({ children }: { children: React.ReactNode
             await videoReady(m, 1500);
             await nextFrames(2);
             m.style.visibility = "";
-            c.removeAttribute("data-transitioning");
+            c.removeAttribute(WORK_TRANSITIONING_ATTR);
             gsap.to(ov.el, {
               opacity: 0,
               duration: 0.35,

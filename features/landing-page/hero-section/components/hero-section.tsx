@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { EXIT_BAND, EXIT_TRAVEL, HERO_MARKER_VH, STAGE_VH, VIGNETTE } from "../config/config";
 import { ReelsVideo } from "./reels-video";
+import { ReelsOverlay } from "./reels-overlay";
 import { useHeroSection } from "../hooks/use-hero-section";
 
 export function HeroSection() {
@@ -89,28 +90,7 @@ export function HeroSection() {
           <span>Infinite spiral</span>
         </div>
 
-        <div
-          ref={reelsHeadingRef}
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-8 pb-6 font-screener uppercase tracking-[0.32em] text-foreground mix-blend-difference md:px-12"
-          style={{ opacity: 0 }}
-        >
-          <h2
-            id="reels-heading"
-            className="text-[clamp(1.6rem,4vw,3.4rem)] font-extrabold normal-case leading-none tracking-[-0.04em]"
-          >
-            Selected reels
-          </h2>
-          <span className="text-[10px] text-foreground/60">02 / Reels</span>
-        </div>
-
-        <div
-          ref={reelsMetaRef}
-          className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between px-8 pt-6 font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50 md:px-12"
-          style={{ opacity: 0 }}
-        >
-          <span>Scroll to drift</span>
-          <span>Loop / 15</span>
-        </div>
+        <ReelsOverlay />
       </div>
 
       {/* two semantic sections share the pinned stage; the split marks where

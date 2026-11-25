@@ -58,6 +58,7 @@ import {
 import { attachBlur, NO_BLUR, NO_SHAPE, setBlur } from "../lib/material";
 import type { LenisLike, SpiralCard, WallTile } from "../config/types";
 import { clamp, colFactor, mod, setCover, smooth } from "../lib/utils";
+import { MQ_COARSE, MQ_NARROW_900, MQ_REDUCED_MOTION, mediaMatches } from "@/lib/media";
 
 type Refs = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -90,10 +91,10 @@ export function useHeroSection({
     const wrapper = wrapperRef.current;
     if (!canvas || !stage || !wrapper) return;
 
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const motionQuery = window.matchMedia(MQ_REDUCED_MOTION);
     let reduceMotion = !IGNORE_REDUCED_MOTION && motionQuery.matches;
-    const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    const narrow = window.matchMedia("(max-width: 900px)").matches;
+    const coarsePointer = mediaMatches(MQ_COARSE);
+    const narrow = mediaMatches(MQ_NARROW_900);
     const art = narrow ? ART_MOBILE : ART;
     const maxDpr = narrow ? 1.5 : MAX_DPR;
     const onMotionChange = (event: MediaQueryListEvent) => {
@@ -1096,6 +1097,7 @@ export function useHeroSection({
         lastMetaO = heroOpacity;
       }
       if (Math.abs(reelsOpacity - lastReelsO) > 0.002) {
+        stage.style.setProperty("--reels", String(reelsOpacity));
         if (reelsHeadingRef.current) reelsHeadingRef.current.style.opacity = String(reelsOpacity);
         if (reelsMetaRef.current) reelsMetaRef.current.style.opacity = String(reelsOpacity);
         const video = reelsVideoRef.current;

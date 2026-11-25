@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { ServiceFigure } from "./components/service-figure";
 import { LABEL, SERVICES } from "./data";
 import { SHAPES, toD } from "./lib/shapes";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export function ServicesSection() {
   const ref = useRef<HTMLElement>(null);
@@ -104,7 +101,7 @@ export function ServicesSection() {
         <div className="overflow-hidden py-1">
           <h2
             data-title
-            className="font-monument text-[clamp(2.5rem,9vw,8.5rem)] font-extrabold uppercase leading-[0.95] tracking-normal text-foreground"
+            className="display-heading text-[clamp(2.5rem,9vw,8.5rem)] text-foreground"
           >
             Services
           </h2>

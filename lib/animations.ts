@@ -1,4 +1,5 @@
 import { gsap } from "gsap";
+import { MQ_REDUCED_MOTION, mediaMatches } from "./media";
 
 export const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/\\|<>+*^#";
 
@@ -10,7 +11,7 @@ export function scramble(el: HTMLElement, duration = 0.7): gsap.core.Tween | und
   const to = el.dataset.text ?? el.textContent ?? "";
   const tweens = (el as { __scrambleTween?: gsap.core.Tween }).__scrambleTween;
   tweens?.kill();
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (mediaMatches(MQ_REDUCED_MOTION)) {
     el.textContent = to;
     return;
   }

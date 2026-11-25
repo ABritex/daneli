@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type RefObject } from "react";
 import { REELS_VIDEO_PLACEHOLDER, REELS_VIDEO_URL } from "../config/config";
 
@@ -34,7 +35,7 @@ export function ReelsVideo({ frameRef }: { frameRef: RefObject<HTMLDivElement | 
     <div className="pointer-events-none absolute inset-0 z-[6] flex items-center justify-center px-6">
       <div
         ref={frameRef}
-        className="relative aspect-video w-[min(72vw,960px)] overflow-hidden border border-foreground/20 bg-black"
+        className="reels-frame relative aspect-video w-[min(72vw,960px)] overflow-hidden border border-foreground/20 bg-black"
         style={{ opacity: 0, pointerEvents: "none", willChange: "opacity, transform" }}
       >
         {!id ? (
@@ -58,11 +59,12 @@ export function ReelsVideo({ frameRef }: { frameRef: RefObject<HTMLDivElement | 
             aria-label="Play video"
             className="group absolute inset-0 h-full w-full cursor-pointer"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`}
               alt=""
-              className="h-full w-full object-cover opacity-80 transition-opacity duration-300 group-hover:opacity-100"
+              fill
+              sizes="(max-width: 768px) 72vw, 960px"
+              className="object-cover opacity-80 transition-opacity duration-300 group-hover:opacity-100"
             />
             <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-foreground/60 bg-black/40 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
               <svg viewBox="0 0 24 24" className="ml-0.5 h-6 w-6 fill-foreground" aria-hidden="true">

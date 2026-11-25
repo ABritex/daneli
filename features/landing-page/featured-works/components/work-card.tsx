@@ -1,9 +1,8 @@
 "use client";
 
-import type { Work } from "@/features/works";
+import { getWorkSlug, getWorkVideo, type Work } from "@/features/works";
 import { TextAnimate } from "@/components/effects";
-
-const FALLBACK_VIDEO = "/bg-test.mp4";
+import { TagList } from "@/components/ui/tag-list";
 
 const GRAIN_SVG =
   "<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>";
@@ -19,9 +18,9 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
   return (
     <article
       data-work
-      data-work-card={(w.href ?? "").replace("/work/", "")}
+      data-work-card={getWorkSlug(w)}
       data-poster={w.media}
-      data-video={w.video ?? FALLBACK_VIDEO}
+      data-video={getWorkVideo(w)}
       className="relative group cursor-pointer"
       onClick={(e) => onOpen(e, w)}
     >
@@ -40,7 +39,7 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
         />
         {/* src is attached lazily once the card is near the viewport */}
         <video
-          data-src={w.video ?? FALLBACK_VIDEO}
+          data-src={getWorkVideo(w)}
           poster={w.media}
           muted
           loop
@@ -49,19 +48,12 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
           className="absolute inset-0 h-full w-full object-cover"
         />
       </div>
-      <div
-        data-meta
+      <TagList
+        data-meta=""
         className="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-left text-[10px] font-bold uppercase tracking-[0.28em] sm:text-xs sm:tracking-[0.5em]"
-      >
-        {w.tags.map((t, k) => (
-          <span key={t} className="flex items-center gap-2">
-            {k > 0 && <span>•</span>}
-            <span data-tag data-text={t} className="text-foreground font-bold">
-              <TextAnimate as="span">{t}</TextAnimate>
-            </span>
-          </span>
-        ))}
-      </div>
+        tags={w.tags}
+        animated
+      />
       <h3 className="mt-2 overflow-hidden py-1">
         {/* the link is only as wide as the title, so the arrow reacts to the
             title alone, never to the card or the empty space beside it */}

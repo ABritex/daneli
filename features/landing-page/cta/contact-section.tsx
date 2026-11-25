@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { ContactFooter } from "./components/contact-footer";
 import { ContactScene } from "./components/contact-scene";
 import { CTA_HREF, CTA_LABEL, HEADLINE } from "./config";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export function ContactSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -78,7 +75,7 @@ export function ContactSection() {
           Have a project in mind?
         </p>
 
-        <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] font-monument text-[clamp(2.2rem,7.8vw,8rem)] font-extrabold uppercase leading-[0.95] tracking-normal text-foreground">
+        <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] display-heading text-[clamp(2.2rem,7.8vw,8rem)] text-foreground">
           {HEADLINE.map((w) => (
             <span key={w} className="inline-block overflow-y-clip pb-[0.08em]">
               <span data-word className="inline-block">

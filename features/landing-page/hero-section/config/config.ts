@@ -75,5 +75,5 @@ export const EXIT_BAND = 0.3; /* exit dissolve: soft edge height, as a fraction 
 export const EXIT_TRAVEL = 0.6; /* exit dissolve: how far the edge rises, as a fraction of the stage */
 /* selected reels: the embedded video. paste any YouTube link (watch, youtu.be, shorts or embed).
    leave it empty to show the placeholder text instead */
-export const REELS_VIDEO_URL = "";
+export const REELS_VIDEO_URL = "https://www.youtube.com/embed/tttN3EbjVfs?si=C9vdZjZY8EFGVtKD";
 export const REELS_VIDEO_PLACEHOLDER = "Embed video / paste a YouTube URL in config.ts";

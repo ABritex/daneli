@@ -458,6 +458,14 @@ html[data-loader="skip"] .nav-item {
   }
 }
 
+.display-heading {
+  font-family: var(--font-monument);
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.95;
+  letter-spacing: normal;
+}
+
 .work-detail-title {
   font-size: clamp(1.25rem, 6.3vw, 2rem);
   overflow-wrap: break-word;
@@ -469,4 +477,136 @@ html[data-loader="skip"] .nav-item {
     overflow-wrap: normal;
     word-break: normal;
   }
+}
+
+/* everything here is a pure function of --reels (0..1), which use-hero-section writes on the stage.
+   no JS per frame, no React state: just CSS reading one number */
+
+.reels-overlay {
+  --r: var(--reels, 0);
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* each element sets --a / --b (the slice of --reels it animates in) and gets --e, an eased 0..1 */
+.reels-rv {
+  --t: clamp(0, calc((var(--r, 0) - var(--a, 0)) / (var(--b, 1) - var(--a, 0))), 1);
+  --e: calc(var(--t) * var(--t) * (3 - 2 * var(--t)));
+}
+
+.reels-rise {
+  opacity: var(--e);
+  transform: translate3d(0, calc((1 - var(--e)) * 16px), 0);
+}
+
+.reels-blur-in {
+  opacity: var(--e);
+  filter: blur(calc((1 - var(--e)) * 6px));
+  transform: translate3d(0, calc((1 - var(--e)) * 18px), 0);
+}
+
+/* heading words rise out of their own mask */
+.reels-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.reels-mask-in {
+  display: inline-block;
+  transform: translate3d(0, calc((1 - var(--e)) * 115%), 0);
+}
+
+/* the video frame itself (class is added in reels-video.tsx): opens from the centre like an iris */
+.reels-frame {
+  --t: clamp(0, calc((var(--reels, 0) - 0.04) / 0.5), 1);
+  --e: calc(var(--t) * var(--t) * (3 - 2 * var(--t)));
+  clip-path: inset(calc((1 - var(--e)) * 50%));
+  scale: calc(0.9 + 0.1 * var(--e));
+}
+
+/* viewfinder corners: start a little wide and close in on the frame */
+.reels-brackets {
+  position: absolute;
+  inset: -14px;
+  opacity: var(--e);
+  transform: scale(calc(1.07 - 0.07 * var(--e)));
+}
+.reels-brackets i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgb(230 229 224 / 0.7);
+}
+.reels-brackets i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.reels-brackets i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.reels-brackets i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.reels-brackets i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+/* caption rows above and below the frame */
+.reels-above,
+.reels-below {
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-family: var(--font-screener, monospace);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: rgb(230 229 224 / 0.55);
+}
+.reels-above {
+  bottom: calc(100% + 24px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.reels-below {
+  top: calc(100% + 24px);
+}
+
+.reels-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: #ff4d4d;
+  animation: pulse 1.3s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% { opacity: 0.25; }
+}
+
+/* film-credit ticker, faded at both ends */
+.reels-ticker {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+.reels-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+}
+.reels-group {
+  display: flex;
+  flex: none;
+  white-space: nowrap;
+}
+.reels-group em {
+  margin: 0 1.4em;
+  font-style: normal;
+  opacity: 0.4;
+}
+@keyframes marquee {
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reels-track,
+  .reels-dot { animation: none; }
 }

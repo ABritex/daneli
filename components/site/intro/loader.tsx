@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MQ_NARROW_768, mediaMatches } from "@/lib/media";
 import { gsap } from "gsap";
 
 // landing loader, does the ink drop reveal thing on the home page
@@ -151,7 +152,7 @@ export function Loader() {
       tl.play();
     };
     window.addEventListener("daneli-hero-ready", tryStart);
-    const heroMaxWait = window.matchMedia("(max-width: 768px)").matches ? HERO_MAX_WAIT_MS_MOBILE : HERO_MAX_WAIT_MS;
+    const heroMaxWait = mediaMatches(MQ_NARROW_768) ? HERO_MAX_WAIT_MS_MOBILE : HERO_MAX_WAIT_MS;
     timers.push(window.setTimeout(() => { holdDone = true; tryStart(); }, HOLD_MS));
     timers.push(window.setTimeout(() => { holdDone = true; forced = true; tryStart(); }, heroMaxWait));
 

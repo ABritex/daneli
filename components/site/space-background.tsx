@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { MQ_NARROW_900, MQ_REDUCED_MOTION, mediaMatches } from "@/lib/media";
 
 /* Burst particles only: tiny white dots leave the centre in random 3D directions,
    grow slightly as they travel, then respawn at the centre. Same camera as the
@@ -34,11 +35,11 @@ export function SpaceBackground() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const narrow = window.matchMedia("(max-width: 900px)").matches;
+    const narrow = mediaMatches(MQ_NARROW_900);
     const dpr = Math.min(window.devicePixelRatio || 1, narrow ? 1.5 : 2);
     const count = narrow ? 70 : PARTICLE_COUNT;
     const reduce =
-      !IGNORE_REDUCED_MOTION && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      !IGNORE_REDUCED_MOTION && mediaMatches(MQ_REDUCED_MOTION);
 
     let raf = 0;
     let w = 0;

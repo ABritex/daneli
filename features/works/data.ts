@@ -1,3 +1,5 @@
+export const FALLBACK_VIDEO = "/bg-test.mp4";
+
 export type Work = {
   id: number;
   name: string;
@@ -256,4 +258,8 @@ export function getWorkSlug(work: Work): string {
 
 export function getWorkBySlug(slug: string): Work | undefined {
   return works.find((work) => work.href === `/work/${slug}`);
+}
+
+export function getWorkVideo(work: Work): string {
+  return work.video ?? FALLBACK_VIDEO;
 }
