@@ -5,6 +5,8 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
+/* the mobile address bar growing/shrinking must not rebuild every trigger */
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 const IGNORE_REDUCED_MOTION = true;
 
@@ -22,19 +24,36 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
     const imageWrap = imageWrapRef.current;
     if (!section || !measure || !imageWrap) return;
 
+    /* size PORTFOLIO to the screen. reads the CURRENT font size, so it works with any font that is loaded right now */
     const fit = () => {
-      section.style.setProperty("--word-size", "100px");
-      const emW = measure.offsetWidth / 100;
+      const word = measure.firstElementChild as HTMLElement | null;
+      if (!word) return;
+      const fs = parseFloat(getComputedStyle(word).fontSize) || 100;
+      const emW = measure.offsetWidth / fs;
+      if (!emW) return;
       const size = Math.min((window.innerWidth * 0.94) / emW, 256);
-      section.style.setProperty("--word-size", `${size}px`);
+      const prev = parseFloat(section.style.getPropertyValue("--word-size")) || 0;
+      if (Math.abs(size - prev) > 0.5) section.style.setProperty("--word-size", `${size}px`);
     };
 
     fit();
     ScrollTrigger.addEventListener("refreshInit", fit);
-    document.fonts?.ready.then(() => {
-      fit();
-      ScrollTrigger.refresh();
-    });
+
+    /* re-fit whenever the word's own width changes (the font swapping in, a resize, a rotation) */
+    const ro = new ResizeObserver(fit);
+    ro.observe(measure);
+    window.addEventListener("resize", fit);
+
+    /* ask for the font explicitly: fonts.ready can resolve before it has even started loading */
+    let alive = true;
+    document.fonts
+      ?.load('800 100px "Monument Extended"')
+      .catch(() => undefined)
+      .finally(() => {
+        if (!alive) return;
+        fit();
+        ScrollTrigger.refresh();
+      });
 
     const q = gsap.utils.selector(section);
     const mm = gsap.matchMedia();
@@ -58,7 +77,7 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
       const frontWrap = q("[data-word-wrap='front']");
       const away = () => window.innerWidth / 2 + measure.offsetWidth / 2 + window.innerWidth * 0.05;
 
-      // entry: image pops in, word layers slide in from sides
+      // entry: image opens up, word layers slide in from the sides
       const entry = gsap.timeline({
         defaults: { ease: "power3.out" },
         scrollTrigger: {
@@ -103,13 +122,36 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
           0.5,
         );
 
-      // exit the big stage stuff
-      tl.to(
+      /* EXIT. every tween here is a fromTo with its start written out, and immediateRender off.
+         a plain .to() would read its start from the element at refresh time, when the entry
+         timeline has been reset to "hidden", and the exit would then animate hidden -> hidden. */
+      tl.fromTo(
         frontWrap,
-        { x: () => -away() * 0.35, scale: 3.2, opacity: 0, filter: "blur(10px)", ease: "power2.in", duration: 0.38 },
+        { x: 0, scale: 1, opacity: 1, filter: "blur(0px)" },
+        {
+          x: () => -away() * 0.35,
+          scale: 3.2,
+          opacity: 0,
+          filter: "blur(10px)",
+          ease: "power2.in",
+          duration: 0.38,
+          immediateRender: false,
+        },
         0.12,
       )
-        .to(backWrap, { x: () => away(), scale: 0.94, opacity: 0, ease: "power3.in", duration: 0.4 }, 0.18)
+        .fromTo(
+          backWrap,
+          { x: 0, scale: 1, opacity: 1, filter: "blur(0px)" },
+          {
+            x: () => away(),
+            scale: 0.94,
+            opacity: 0,
+            ease: "power3.in",
+            duration: 0.4,
+            immediateRender: false,
+          },
+          0.18,
+        )
         .fromTo(
           image,
           { clipPath: "circle(150% at 50% 100%)", scale: 1 },
@@ -117,12 +159,18 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
           0.3,
         );
 
-      // bring in copy, mark when its done for the highlighter, then fade it out before leaving
-      tl.to(copyItems, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.62);
-      tl.addLabel("copyDone", ">");
-      tl.to(
+      // copy in, mark when it is done for the highlighter, then copy out before the section unpins
+      tl.fromTo(
         copyItems,
-        { opacity: 0, y: -30, filter: "blur(4px)", duration: 0.2, ease: "power2.inOut" },
+        { opacity: 0, y: 24, filter: "blur(0px)" },
+        { opacity: 1, y: 0, duration: 0.35, ease: "power3.out", immediateRender: false },
+        0.62,
+      );
+      tl.addLabel("copyDone", ">");
+      tl.fromTo(
+        copyItems,
+        { opacity: 1, y: 0, filter: "blur(0px)" },
+        { opacity: 0, y: -30, filter: "blur(4px)", duration: 0.2, ease: "power2.inOut", immediateRender: false },
         1.15,
       );
       tl.to({}, { duration: 0.1 });
@@ -133,6 +181,9 @@ export function useAboutAnimation({ sectionRef, measureRef, imageWrapRef, setCop
     }, section);
 
     return () => {
+      alive = false;
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
       ScrollTrigger.removeEventListener("refreshInit", fit);
       mm.revert();
     };
