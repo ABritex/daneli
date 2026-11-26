@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 export const siteConfig = {
     name: "DanEli",
     title: "DanEli — Creative Director & Visual Designer",
-    description: "Portfolio of Daniel Eli Reyes, a creative generalist specializing in cinematography, 3D motion, VFX, and visual storytelling.",
+    description: "Portfolio of Elijah Daniel V. Reyes, a creative generalist specializing in cinematography, 3D motion, VFX, and visual storytelling.",
     url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://dan-eli.vercel.app",
     ogImage: "/opengraph-image",
-    creator: "Daniel Eli Reyes",
+    creator: "Elijah Daniel V. Reyes",
     email: "danelidevr@gmail.com",
 } as const;
 

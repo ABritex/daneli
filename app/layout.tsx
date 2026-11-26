@@ -82,6 +82,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         "@context": "https://schema.org",
         "@type": "Person",
         name: siteConfig.creator,
+        alternateName: ["Elijah Reyes", "Elijah Daniel", "Daniel Reyes", "Daniel Eli Reyes", "DanEli"],
         url: siteConfig.url,
         email: siteConfig.email,
         jobTitle: "Creative Director & Visual Designer",
