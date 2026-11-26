@@ -26,14 +26,15 @@ export function AboutSection() {
                         </div>
 
                         {/* daniel image, pinned to bottom of the sticky stage */}
-                        <div className="pointer-events-none absolute inset-x-0 -bottom-[12vh] z-10 flex justify-center">
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center md:-bottom-[12vh]">
                             <div
                                 ref={imageWrapRef}
                                 data-image-wrap
-                                className="relative aspect-[1526/1892] h-[min(125svh,calc(155vw*1.2398))] shrink-0 will-change-transform md:h-[min(96svh,calc(96vw*1.2398))]"
+                                className="relative aspect-[1526/1892] h-[min(100svh,calc(120vw*1.2398))] shrink-0 will-change-transform md:h-[min(96svh,calc(96vw*1.2398))]"
                             >
                                 <div data-image className="relative h-full w-full will-change-transform" style={{ transformOrigin: "50% 100%" }}>
                                     <picture className="block h-full w-full">
+                                        <source media="(max-width: 767px)" srcSet="/daniel-mobile.png" />
                                         <source srcSet="/daniel.avif" type="image/avif" />
                                         <source srcSet="/daniel.webp" type="image/webp" />
                                         <img
