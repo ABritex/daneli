@@ -7,39 +7,41 @@ import { initWorkCanvas } from "./use-work-canvas";
 import { initWorkScrollAnimations } from "./use-work-scroll-animations";
 
 // drives the featured works webgl scene
-export function useWorkScene() {
-  const rootRef = useRef<HTMLElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// `key` changes whenever the list of works changes (they come from the database, so the cards can
+// appear after mount). the scene is built from the cards that exist in the DOM, so it has to be rebuilt.
+export function useWorkScene(key: string) {
+    const rootRef = useRef<HTMLElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useLazyVideos(rootRef);
+    useLazyVideos(rootRef, key);
 
-  useEffect(() => {
-    const root = rootRef.current;
-    const canvas = canvasRef.current;
-    if (!root || !canvas) return;
+    useEffect(() => {
+        const root = rootRef.current;
+        const canvas = canvasRef.current;
+        if (!root || !canvas) return;
 
-    let teardown: (() => void) | undefined;
+        let teardown: (() => void) | undefined;
 
-    const init = () => {
-      const canvasState = initWorkCanvas(root, canvas);
-      const cleanupScroll = initWorkScrollAnimations(root, canvasState.planes, canvasState.sectionBody);
-      return () => {
-        cleanupScroll();
-        canvasState.cleanup();
-      };
-    };
+        const init = () => {
+            const canvasState = initWorkCanvas(root, canvas);
+            const cleanupScroll = initWorkScrollAnimations(root, canvasState.planes, canvasState.sectionBody);
+            return () => {
+                cleanupScroll();
+                canvasState.cleanup();
+            };
+        };
 
-    // WebGL, textures and ScrollTriggers are created only after the loader is gone,
-    // so the loader animation never competes with shader compilation.
-    const stop = onLoaderReady(() => {
-      teardown = init();
-    });
+        // WebGL, textures and ScrollTriggers are created only after the loader is gone,
+        // so the loader animation never competes with shader compilation.
+        const stop = onLoaderReady(() => {
+            teardown = init();
+        });
 
-    return () => {
-      stop();
-      teardown?.();
-    };
-  }, []);
+        return () => {
+            stop();
+            teardown?.();
+        };
+    }, [key]);
 
-  return { rootRef, canvasRef };
+    return { rootRef, canvasRef };
 }

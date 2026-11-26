@@ -1,15 +1,4 @@
-import {
-  CURVE_CENTER,
-  CURVE_DEPTH,
-  CURVE_SATURATE,
-  HOVER_DRIFT,
-  HOVER_ZOOM,
-  MOTION_BLUR,
-  PRISM,
-  TILT,
-  TILT_LOWER,
-  TILT_UP,
-} from "../config/scene";
+import { CURVE_CENTER, CURVE_DEPTH, CURVE_SATURATE, HOVER_DRIFT, HOVER_ZOOM, MOTION_BLUR, PRISM, TILT, TILT_LOWER, TILT_UP } from "../config/scene";
 
 // vertex shader: bends cards a bit based on scroll speed / screen position
 export const vertexShader = /* glsl */ `

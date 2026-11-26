@@ -8,47 +8,37 @@ let frameDrawTl: gsap.core.Timeline | undefined;
 
 // the lines are hidden while a morph runs; they are re-drawn once the new page has settled
 export const hideFrameLines = () => {
-  frameDrawTl?.kill();
-  const all = document.querySelectorAll(FRAME_LINES);
-  if (!all.length) return;
-  gsap.killTweensOf(all);
-  gsap.to(all, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
+    frameDrawTl?.kill();
+    const all = document.querySelectorAll(FRAME_LINES);
+    if (!all.length) return;
+    gsap.killTweensOf(all);
+    gsap.to(all, { opacity: 0, duration: 0.25, ease: "power1.out", overwrite: true });
 };
 
 export const drawFrameLines = () => {
-  const xs = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-x`));
-  const ys = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-y`));
-  const all = [...xs, ...ys];
-  frameDrawTl?.kill();
-  if (!all.length) return;
-  gsap.killTweensOf(all);
-  // take over from css intro, just reveal with clip
-  all.forEach((el) => {
-    el.style.animation = "none";
-    el.style.opacity = "1";
-    el.style.transform = "none";
-  });
+    const xs = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-x`));
+    const ys = Array.from(document.querySelectorAll<HTMLElement>(`${FRAME_LINES}.line-y`));
+    const all = [...xs, ...ys];
+    frameDrawTl?.kill();
+    if (!all.length) return;
+    gsap.killTweensOf(all);
+    // take over from css intro, just reveal with clip
+    all.forEach((el) => {
+        el.style.animation = "none";
+        el.style.opacity = "1";
+        el.style.transform = "none";
+    });
 
-  frameDrawTl = gsap.timeline({
-    defaults: { duration: 0.9, ease: "power3.inOut" },
-    onComplete: () => all.forEach((el) => (el.style.clipPath = "")),
-  });
-  // horizontals: left -> right
-  if (xs.length) {
-    frameDrawTl.fromTo(
-      xs,
-      { clipPath: "inset(0% 100% 0% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 },
-      0,
-    );
-  }
-  // verticals: top -> bottom
-  if (ys.length) {
-    frameDrawTl.fromTo(
-      ys,
-      { clipPath: "inset(0% 0% 100% 0%)" },
-      { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 },
-      0.15,
-    );
-  }
+    frameDrawTl = gsap.timeline({
+        defaults: { duration: 0.9, ease: "power3.inOut" },
+        onComplete: () => all.forEach((el) => (el.style.clipPath = "")),
+    });
+    // horizontals: left -> right
+    if (xs.length) {
+        frameDrawTl.fromTo(xs, { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 }, 0);
+    }
+    // verticals: top -> bottom
+    if (ys.length) {
+        frameDrawTl.fromTo(ys, { clipPath: "inset(0% 0% 100% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", stagger: 0.1 }, 0.15);
+    }
 };

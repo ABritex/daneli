@@ -23,11 +23,14 @@ export const GLIDE_MS = 1600;
    a short flick, a stopped drag...), finish it instead of leaving cards frozen mid-flight */
 export const SETTLE_IDLE_MS = 220;
 export const SETTLE_FORWARD_P = 0.4; /* rest past this -> finish to the reels, before it -> back to the hero */
+/* after a snap, swallow wheel events until the wheel has been quiet this long (a fresh gesture), capped by the max */
+export const WHEEL_QUIET_MS = 140;
+export const WHEEL_HOLD_MAX_MS = 1100;
 export const CARDS_PER_TURN = 7;
 export const CENTER_SCALE = 1.2;
 export const EDGE_FADE = 0.8;
 export const VIGNETTE =
-  "radial-gradient(ellipse 78% 82% at 50% 46%, transparent 40%, #070707 100%), linear-gradient(to bottom, #070707 0%, transparent 60%)"; /* inverse of the DriftWall CSS mask. static, so only its opacity animates (compositor). the exit dissolve is the separate EXIT layer below, moved with transform instead of a CSS variable inside the gradient (which repainted a full-screen gradient every frame) */
+    "radial-gradient(ellipse 78% 82% at 50% 46%, transparent 40%, var(--background) 100%), linear-gradient(to bottom, var(--background) 0%, transparent 60%)"; /* inverse of the DriftWall CSS mask. static, so only its opacity animates (compositor). the exit dissolve is the separate EXIT layer below, moved with transform instead of a CSS variable inside the gradient (which repainted a full-screen gradient every frame) */
 export const CARD_RADIUS = 9; /* spiral card corner radius, React Bits cardRadius */
 export const EDGE_BLUR = 10; /* px of blur on cards at the spiral's edges, same as the React Bits InfiniteSpiral default */
 export const CARD_TILT = -10; /* deg, rotateZ on every card (React Bits cardTilt) */
@@ -73,7 +76,5 @@ export const MIN_DPR = 1.25;
 export const BLUR_CUTOFF_PX = 0.4; /* below this the 16-tap blur loop is skipped (it was running for sub-pixel blur during the morph) */
 export const EXIT_BAND = 0.3; /* exit dissolve: soft edge height, as a fraction of the stage */
 export const EXIT_TRAVEL = 0.6; /* exit dissolve: how far the edge rises, as a fraction of the stage */
-/* selected reels: the embedded video. paste any YouTube link (watch, youtu.be, shorts or embed).
-   leave it empty to show the placeholder text instead */
-export const REELS_VIDEO_URL = "https://www.youtube.com/embed/tttN3EbjVfs?si=C9vdZjZY8EFGVtKD";
-export const REELS_VIDEO_PLACEHOLDER = "Embed video / paste a YouTube URL in config.ts";
+/* selected reels: shown when no reel video is configured in admin */
+export const REELS_VIDEO_PLACEHOLDER = "Reel coming soon";

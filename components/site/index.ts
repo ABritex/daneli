@@ -1,3 +1,4 @@
+export { ConsoleEasterEgg } from "./console-easter-egg";
 export { GrainOverlay } from "./grain-overlay";
 export { SpaceBackground } from "./space-background";
 export { IntroSequence, Loader } from "./intro";

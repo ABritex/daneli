@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BLUR_CUTOFF_PX, CARD_RADIUS } from "../config/config";
+import { BLUR_CUTOFF_PX } from "../config/config";
 
 /* MeshBasicMaterial map sampling with (1) a cheap disc blur (uBlur = radius in uv units) and
    (2) the React Bits spiral card look: rounded corners (uShape = card
@@ -33,20 +33,15 @@ const BLUR_MAP_FRAGMENT = /* glsl */ `
 #endif
 `;
 
-export const attachBlur = (
-  material: THREE.MeshBasicMaterial,
-  blur: THREE.Vector2,
-  shape: THREE.Vector4,
-  cover: THREE.Vector2,
-) => {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uBlur = { value: blur };
-    shader.uniforms.uShape = { value: shape };
-    shader.uniforms.uCover = { value: cover };
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform vec2 uBlur;\nuniform vec4 uShape;\nuniform vec2 uCover;")
-      .replace("#include <map_fragment>", BLUR_MAP_FRAGMENT);
-  };
+export const attachBlur = (material: THREE.MeshBasicMaterial, blur: THREE.Vector2, shape: THREE.Vector4, cover: THREE.Vector2) => {
+    material.onBeforeCompile = (shader) => {
+        shader.uniforms.uBlur = { value: blur };
+        shader.uniforms.uShape = { value: shape };
+        shader.uniforms.uCover = { value: cover };
+        shader.fragmentShader = shader.fragmentShader
+            .replace("#include <common>", "#include <common>\nuniform vec2 uBlur;\nuniform vec4 uShape;\nuniform vec2 uCover;")
+            .replace("#include <map_fragment>", BLUR_MAP_FRAGMENT);
+    };
 };
 
 /* shared "do nothing" uniforms for the wall tiles (they only use the cover crop) */
@@ -55,10 +50,10 @@ export const NO_SHAPE = new THREE.Vector4(0, 0, 0, 1);
 
 /* css-px blur -> uv-space radius for a card of the given on-screen size (~1.8 sigma disc) */
 export const setBlur = (u: THREE.Vector2, px: number, size: THREE.Vector3) => {
-  if (px < BLUR_CUTOFF_PX) {
-    u.set(0, 0); /* shader skips its 16 extra texture taps */
-    return;
-  }
-  const r = px * 1.8;
-  u.set(r / Math.max(size.x, 1), r / Math.max(size.y, 1));
+    if (px < BLUR_CUTOFF_PX) {
+        u.set(0, 0); /* shader skips its 16 extra texture taps */
+        return;
+    }
+    const r = px * 1.8;
+    u.set(r / Math.max(size.x, 1), r / Math.max(size.y, 1));
 };

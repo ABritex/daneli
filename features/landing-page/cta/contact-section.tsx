@@ -1,101 +1,70 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { ContactFooter } from "./components/contact-footer";
 import { ContactScene } from "./components/contact-scene";
 import { CTA_HREF, CTA_LABEL, HEADLINE } from "./config";
 
 export function ContactSection() {
-  const sectionRef = useRef<HTMLElement>(null);
+    const sectionRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+    useGSAP(
+        () => {
+            const section = sectionRef.current;
+            if (!section) return;
+            const q = gsap.utils.selector(section);
 
-    const ctx = gsap.context(() => {
-      const q = gsap.utils.selector(section);
+            gsap.timeline({
+                scrollTrigger: { trigger: section, start: "top 60%", once: true },
+            })
+                .fromTo(q("[data-eyebrow]"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0)
+                .fromTo(q("[data-word]"), { yPercent: 115 }, { yPercent: 0, duration: 1.1, stagger: 0.1, ease: "power4.out" }, 0.1)
+                .fromTo(q("[data-cta]"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, 0.55)
+                .fromTo(q("[data-footer-item]"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.08, ease: "power2.out" }, 0.8);
+        },
+        { scope: sectionRef },
+    );
 
-      gsap
-        .timeline({
-          scrollTrigger: { trigger: section, start: "top 60%", once: true },
-        })
-        .fromTo(
-          q("[data-eyebrow]"),
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
-          0,
-        )
-        .fromTo(
-          q("[data-word]"),
-          { yPercent: 115 },
-          { yPercent: 0, duration: 1.1, stagger: 0.1, ease: "power4.out" },
-          0.1,
-        )
-        .fromTo(
-          q("[data-cta]"),
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" },
-          0.55,
-        )
-        .fromTo(
-          q("[data-footer-item]"),
-          { opacity: 0, y: 16 },
-          { opacity: 1, y: 0, duration: 0.8, stagger: 0.08, ease: "power2.out" },
-          0.8,
-        );
-    }, section);
+    return (
+        <section id="contact" ref={sectionRef} className="relative isolate flex min-h-screen flex-col overflow-hidden">
+            {/* soft glow behind the headline */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-20"
+                style={{
+                    background: "radial-gradient(ellipse 62% 52% at 50% 46%, rgba(230,229,224,0.11) 0%, rgba(230,229,224,0.04) 45%, transparent 75%)",
+                }}
+            />
 
-    return () => ctx.revert();
-  }, []);
+            <ContactScene />
 
-  return (
-    <section
-      id="contact"
-      ref={sectionRef}
-      className="relative isolate flex min-h-screen flex-col overflow-hidden"
-    >
-      {/* soft glow behind the headline */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-20"
-        style={{
-          background:
-            "radial-gradient(ellipse 62% 52% at 50% 46%, rgba(230,229,224,0.11) 0%, rgba(230,229,224,0.04) 45%, transparent 75%)",
-        }}
-      />
+            <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-32 text-center">
+                <p data-eyebrow className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50">
+                    Have a project in mind?
+                </p>
 
-      <ContactScene />
+                <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] display-heading text-[clamp(2.2rem,7.8vw,8rem)] text-foreground">
+                    {HEADLINE.map((w) => (
+                        <span key={w} className="inline-block overflow-y-clip pb-[0.08em]">
+                            <span data-word className="inline-block">
+                                {w}
+                            </span>
+                        </span>
+                    ))}
+                </h2>
 
-      <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-32 text-center">
-        <p
-          data-eyebrow
-          className="font-screener text-[10px] uppercase tracking-[0.32em] text-foreground/50"
-        >
-          Have a project in mind?
-        </p>
+                <div data-cta className="relative isolate mt-12">
+                    <a
+                        href={CTA_HREF}
+                        className="rgb-btn relative inline-flex h-14 items-center justify-center rounded-[16px] bg-foreground px-10 text-sm font-semibold text-background transition-colors duration-300 hover:bg-[var(--accent-warm)]"
+                    >
+                        {CTA_LABEL}
+                    </a>
+                </div>
+            </div>
 
-        <h2 className="mt-6 flex flex-wrap items-baseline justify-center gap-x-[0.28em] display-heading text-[clamp(2.2rem,7.8vw,8rem)] text-foreground">
-          {HEADLINE.map((w) => (
-            <span key={w} className="inline-block overflow-y-clip pb-[0.08em]">
-              <span data-word className="inline-block">
-                {w}
-              </span>
-            </span>
-          ))}
-        </h2>
-
-        <div data-cta className="relative isolate mt-12">
-          <a
-            href={CTA_HREF}
-            className="rgb-btn relative inline-flex h-14 items-center justify-center rounded-[16px] bg-[#e6e5e0] px-10 text-sm font-semibold text-[#070707]"
-          >
-            {CTA_LABEL}
-          </a>
-        </div>
-      </div>
-
-      <ContactFooter />
-    </section>
-  );
+            <ContactFooter />
+        </section>
+    );
 }

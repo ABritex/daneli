@@ -8,19 +8,19 @@ export const MQ_HOVER = "(hover: hover)";
 export const MQ_COARSE = "(pointer: coarse)";
 
 export function mediaMatches(query: string) {
-  return typeof window !== "undefined" && window.matchMedia(query).matches;
+    return typeof window !== "undefined" && window.matchMedia(query).matches;
 }
 
 function subscribe(query: string, onChange: () => void) {
-  const mql = window.matchMedia(query);
-  mql.addEventListener("change", onChange);
-  return () => mql.removeEventListener("change", onChange);
+    const mql = window.matchMedia(query);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
 }
 
 export function useMediaQuery(query: string) {
-  return useSyncExternalStore(
-    (onChange) => subscribe(query, onChange),
-    () => mediaMatches(query),
-    () => false,
-  );
+    return useSyncExternalStore(
+        (onChange) => subscribe(query, onChange),
+        () => mediaMatches(query),
+        () => false,
+    );
 }

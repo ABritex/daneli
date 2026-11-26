@@ -1,28 +1,22 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useMemo, useCallback, memo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
 
 interface FlipFadeTextProps {
-    words?: string[]
-    interval?: number
-    className?: string
-    textClassName?: string
-    letterDuration?: number
-    staggerDelay?: number
-    exitStaggerDelay?: number
+    words?: string[];
+    interval?: number;
+    className?: string;
+    textClassName?: string;
+    letterDuration?: number;
+    staggerDelay?: number;
+    exitStaggerDelay?: number;
 }
 
-const defaultWords = ["LOADING", "COMPUTING", "SEARCHING", "RETRIEVING", "ASSEMBLING"]
+const defaultWords = ["LOADING", "COMPUTING", "SEARCHING", "RETRIEVING", "ASSEMBLING"];
 
-const Letter = memo(function Letter({
-    char,
-    letterDuration
-}: {
-    char: string
-    letterDuration: number
-}) {
+const Letter = memo(function Letter({ char, letterDuration }: { char: string; letterDuration: number }) {
     return (
         <motion.span
             style={{ transformStyle: "preserve-3d" }}
@@ -58,30 +52,27 @@ const Letter = memo(function Letter({
         >
             {char}
         </motion.span>
-    )
-})
+    );
+});
 
 const Word = memo(function Word({
     text,
     staggerDelay,
     exitStaggerDelay,
     letterDuration,
-    textClassName
+    textClassName,
 }: {
-    text: string
-    staggerDelay: number
-    exitStaggerDelay: number
-    letterDuration: number
-    textClassName?: string
+    text: string;
+    staggerDelay: number;
+    exitStaggerDelay: number;
+    letterDuration: number;
+    textClassName?: string;
 }) {
-    const letters = useMemo(() => text.split(""), [text])
+    const letters = useMemo(() => text.split(""), [text]);
 
     return (
         <motion.div
-            className={cn(
-                "flex gap-[0.1em] text-4xl md:text-6xl font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-100",
-                textClassName
-            )}
+            className={cn("flex gap-[0.1em] text-4xl md:text-6xl font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-100", textClassName)}
             initial="initial"
             animate="animate"
             exit="exit"
@@ -102,54 +93,35 @@ const Word = memo(function Word({
             }}
         >
             {letters.map((char, i) => (
-                <Letter
-                    key={`${char}-${i}`}
-                    char={char}
-                    letterDuration={letterDuration}
-                />
+                <Letter key={`${char}-${i}`} char={char} letterDuration={letterDuration} />
             ))}
         </motion.div>
-    )
-})
+    );
+});
 
-export function FlipFadeText({
-    words = defaultWords,
-    interval = 2500,
-    className,
-    textClassName,
-    letterDuration = 0.6,
-    staggerDelay = 0.1,
-    exitStaggerDelay = 0.05,
-}: FlipFadeTextProps) {
-    const [index, setIndex] = useState(0)
+export function FlipFadeText({ words = defaultWords, interval = 2500, className, textClassName, letterDuration = 0.6, staggerDelay = 0.1, exitStaggerDelay = 0.05 }: FlipFadeTextProps) {
+    const [index, setIndex] = useState(0);
 
     const updateIndex = useCallback(() => {
-        setIndex((prev) => (prev + 1) % words.length)
-    }, [words.length])
+        setIndex((prev) => (prev + 1) % words.length);
+    }, [words.length]);
 
     useEffect(() => {
-        const timer = setInterval(updateIndex, interval)
-        return () => clearInterval(timer)
-    }, [updateIndex, interval])
+        const timer = setInterval(updateIndex, interval);
+        return () => clearInterval(timer);
+    }, [updateIndex, interval]);
 
-    const currentWord = useMemo(() => words[index], [words, index])
+    const currentWord = useMemo(() => words[index], [words, index]);
 
     return (
         <div className={cn("flex items-center justify-center min-h-[200px]", className)}>
             <div className="relative flex items-center justify-center" style={{ perspective: "1000px" }}>
                 <AnimatePresence mode="wait">
-                    <Word
-                        key={currentWord}
-                        text={currentWord}
-                        staggerDelay={staggerDelay}
-                        exitStaggerDelay={exitStaggerDelay}
-                        letterDuration={letterDuration}
-                        textClassName={textClassName}
-                    />
+                    <Word key={currentWord} text={currentWord} staggerDelay={staggerDelay} exitStaggerDelay={exitStaggerDelay} letterDuration={letterDuration} textClassName={textClassName} />
                 </AnimatePresence>
             </div>
         </div>
-    )
+    );
 }
 
-export default FlipFadeText
+export default FlipFadeText;

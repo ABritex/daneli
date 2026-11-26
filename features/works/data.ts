@@ -1,265 +1,63 @@
-export const FALLBACK_VIDEO = "/bg-test.mp4";
+export const FALLBACK_VIDEO = "/media-placeholder.svg";
 
-export type Work = {
-  id: number;
-  name: string;
-  tags: string[];
-  media: string;
-  video?: string;
-  href?: string;
-  url?: string; // optional live project link, shows the Launch project pill
-  description: string;
-  year: string;
-  client: string;
-  role: string;
-  gallery: string[];
+export const MEDIA_PROXY_PREFIX = "/media/";
+export function proxyMedia(src: string) {
+    const storagePrefix = process.env.NEXT_PUBLIC_MEDIA_STORAGE_PREFIX;
+    return storagePrefix && src.startsWith(storagePrefix) ? MEDIA_PROXY_PREFIX + src.slice(storagePrefix.length) : src;
+}
+
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|ogg)(\?.*)?$/i;
+export function isVideoSrc(src: string) {
+    return VIDEO_EXT.test(src);
+}
+
+export type GalleryItem = {
+    url: string;
+    caption: string;
 };
 
-export const works: Work[] = [
-  {
-    id: 1,
-    name: "Lorem Ipsum Dolor",
-    tags: ["LOREM", "IPSUM"],
-    media: "/works/posters/marketing-cinematography-hotel.jpg",
-    video: "/works/marketing-cinematography-hotel.mp4",
-    href: "/work/cinematography-hotel",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-cinematography-hotel.jpg"],
-  },
-  {
-    id: 2,
-    name: "Sit Amet Consectetur",
-    tags: ["DOLOR", "SIT AMET"],
-    media: "/works/posters/marketing-3d-motion-logo.jpg",
-    video: "/works/marketing-3d-motion-logo.mp4",
-    href: "/work/3d-motion-logo",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-3d-motion-logo.jpg"],
-  },
-  {
-    id: 3,
-    name: "Adipiscing Elit Sed",
-    tags: ["CONSECTETUR", "ADIPISCING"],
-    media: "/works/posters/marketing-3d-motion-snicker.jpg",
-    video: "/works/marketing-3d-motion-snicker.mp4",
-    href: "/work/3d-motion-snicker",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-3d-motion-snicker.jpg"],
-  },
-  {
-    id: 4,
-    name: "Do Eiusmod Tempor",
-    tags: ["ELIT SED", "DO EIUSMOD"],
-    media: "/works/posters/marketing-3d-motion-keyboard.jpg",
-    video: "/works/marketing-3d-motion-keyboard.mp4",
-    href: "/work/3d-motion-keyboard",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-3d-motion-keyboard.jpg"],
-  },
-  {
-    id: 5,
-    name: "Incididunt Ut Labore",
-    tags: ["TEMPOR", "INCIDIDUNT"],
-    media: "/works/posters/marketing-3d-motion-strawberry.jpg",
-    video: "/works/marketing-3d-motion-strawberry.mp4",
-    href: "/work/3d-motion-strawberry",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-3d-motion-strawberry.jpg"],
-  },
-  {
-    id: 6,
-    name: "Et Dolore Magna",
-    tags: ["UT LABORE", "ET DOLORE"],
-    media: "/works/posters/marketing-3d-motion-coffee.jpg",
-    video: "/works/marketing-3d-motion-coffee.mp4",
-    href: "/work/3d-motion-coffee",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/marketing-3d-motion-coffee.jpg"],
-  },
-  {
-    id: 7,
-    name: "Aliqua Ut Enim",
-    tags: ["MAGNA", "ALIQUA"],
-    media: "/works/posters/3d-and-assembly-3d-film-clip-1.jpg",
-    video: "/works/3d-and-assembly-3d-film-clip-1.mp4",
-    href: "/work/3d-film-clip-1",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-film-clip-1.jpg"],
-  },
-  {
-    id: 8,
-    name: "Ad Minim Veniam",
-    tags: ["UT ENIM", "AD MINIM"],
-    media: "/works/posters/3d-and-assembly-3d-pixar.jpg",
-    video: "/works/3d-and-assembly-3d-pixar.mp4",
-    href: "/work/3d-pixar",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-pixar.jpg"],
-  },
-  {
-    id: 9,
-    name: "Quis Nostrud Exercitation",
-    tags: ["VENIAM", "QUIS NOSTRUD"],
-    media: "/works/posters/3d-and-assembly-3d-mesmerizing-cube.jpg",
-    video: "/works/3d-and-assembly-3d-mesmerizing-cube.mp4",
-    href: "/work/3d-mesmerizing-cube",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-mesmerizing-cube.jpg"],
-  },
-  {
-    id: 10,
-    name: "Ullamco Laboris Nisi",
-    tags: ["EXERCITATION", "ULLAMCO"],
-    media: "/works/posters/3d-and-assembly-3d-film-clip-2.jpg",
-    video: "/works/3d-and-assembly-3d-film-clip-2.mp4",
-    href: "/work/3d-film-clip-2",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-film-clip-2.jpg"],
-  },
-  {
-    id: 11,
-    name: "Ut Aliquip Ex Ea",
-    tags: ["LABORIS", "NISI UT"],
-    media: "/works/posters/3d-and-assembly-3d-car-chase.jpg",
-    video: "/works/3d-and-assembly-3d-car-chase.mp4",
-    href: "/work/3d-car-chase",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-car-chase.jpg"],
-  },
-  {
-    id: 12,
-    name: "Commodo Consequat Duis",
-    tags: ["ALIQUIP", "EX EA"],
-    media: "/works/posters/3d-and-assembly-3d-character.jpg",
-    video: "/works/3d-and-assembly-3d-character.mp4",
-    href: "/work/3d-character",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/3d-and-assembly-3d-character.jpg"],
-  },
-  {
-    id: 13,
-    name: "Aute Irure Dolor",
-    tags: ["COMMODO", "CONSEQUAT"],
-    media: "/works/posters/engagement-vfx-music-video.jpg",
-    video: "/works/engagement-vfx-music-video.mp4",
-    href: "/work/vfx-music-video",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-vfx-music-video.jpg"],
-  },
-  {
-    id: 14,
-    name: "In Reprehenderit Voluptate",
-    tags: ["DUIS AUTE", "IRURE"],
-    media: "/works/posters/engagement-vfx-music-2.jpg",
-    video: "/works/engagement-vfx-music-2.mp4",
-    href: "/work/vfx-music-2",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-vfx-music-2.jpg"],
-  },
-  {
-    id: 15,
-    name: "Velit Esse Cillum",
-    tags: ["DOLOR IN", "REPREHENDERIT"],
-    media: "/works/posters/engagement-vfx-milkyway.jpg",
-    video: "/works/engagement-vfx-milkyway.mp4",
-    href: "/work/vfx-milkyway",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-vfx-milkyway.jpg"],
-  },
-  {
-    id: 16,
-    name: "Dolore Eu Fugiat",
-    tags: ["VOLUPTATE", "VELIT ESSE"],
-    media: "/works/posters/engagement-videography-1.jpg",
-    video: "/works/engagement-videography-1.mp4",
-    href: "/work/videography-1",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-videography-1.jpg"],
-  },
-  {
-    id: 17,
-    name: "Nulla Pariatur Excepteur",
-    tags: ["CILLUM", "DOLORE EU"],
-    media: "/works/posters/engagement-videography-2.jpg",
-    video: "/works/engagement-videography-2.mp4",
-    href: "/work/videography-2",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-videography-2.jpg"],
-  },
-  {
-    id: 18,
-    name: "Sint Occaecat Cupidatat",
-    tags: ["FUGIAT", "NULLA"],
-    media: "/works/posters/engagement-vfx-2.jpg",
-    video: "/works/engagement-vfx-2.mp4",
-    href: "/work/vfx-2",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    year: "2026",
-    client: "Lorem Ipsum",
-    role: "Lorem Ipsum",
-    gallery: ["/works/posters/engagement-vfx-2.jpg"],
-  },
-];
+export type Work = {
+    id: number;
+    name: string;
+    tags: string[];
+    media: string;
+    mediaCaption: string;
+    video?: string;
+    href?: string;
+    url?: string; // optional live project link, shows the Launch project pill
+    description: string;
+    year: string;
+    client: string;
+    role: string;
+    gallery: GalleryItem[];
+};
+
+export const works: Work[] = [];
 
 export function getWorkSlug(work: Work): string {
-  return work.href?.replace("/work/", "") ?? "";
+    return work.href?.replace("/work/", "") ?? "";
 }
 
 export function getWorkBySlug(slug: string): Work | undefined {
-  return works.find((work) => work.href === `/work/${slug}`);
+    return works.find((work) => work.href === `/work/${slug}`);
 }
 
 export function getWorkVideo(work: Work): string {
-  return work.video ?? FALLBACK_VIDEO;
+    if (work.video) return work.video;
+    if (work.media && isVideoSrc(work.media)) return work.media;
+    return FALLBACK_VIDEO;
+}
+
+export function getWorkPoster(work: Work): string | undefined {
+    if (work.media && !isVideoSrc(work.media)) return work.media;
+    return undefined;
+}
+
+export function proxyWork(w: Work): Work {
+    return {
+        ...w,
+        media: proxyMedia(w.media),
+        video: w.video ? proxyMedia(w.video) : w.video,
+        gallery: w.gallery.map((item) => ({ ...item, url: proxyMedia(item.url) })),
+    };
 }
