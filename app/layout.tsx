@@ -90,9 +90,25 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     return (
         <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
             <head>
+                <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PL7HWSM9"></script>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());`,
+                    }}
+                />
                 <script dangerouslySetInnerHTML={{ __html: BOOT }} />
             </head>
             <body className="min-h-full flex flex-col">
+                <noscript>
+                    <iframe
+                        src="https://www.googletagmanager.com/ns.html?id=GTM-PL7HWSM9"
+                        height="0"
+                        width="0"
+                        style={{ display: "none", visibility: "hidden" }}
+                    />
+                </noscript>
                 <JsonLd data={[websiteJsonLd, personJsonLd]} />
                 <ConsoleEasterEgg />
                 <SmoothScroll>
