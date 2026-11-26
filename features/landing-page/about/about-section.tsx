@@ -34,6 +34,7 @@ export function AboutSection() {
                             >
                                 <div data-image className="relative h-full w-full will-change-transform" style={{ transformOrigin: "50% 100%" }}>
                                     <picture className="block h-full w-full">
+                                        <source media="(max-width: 767px)" srcSet="/daniel-mobile.webp" type="image/webp" />
                                         <source media="(max-width: 767px)" srcSet="/daniel-mobile.png" />
                                         <source srcSet="/daniel.avif" type="image/avif" />
                                         <source srcSet="/daniel.webp" type="image/webp" />
