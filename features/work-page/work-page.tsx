@@ -151,20 +151,22 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                     </div>
 
                     {resolved.url && (
-                        <a
-                            {...{ [FADE_ATTR]: "" }}
-                            href={resolved.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-10 inline-flex w-fit items-center gap-3 rounded-full bg-foreground px-5 py-3 font-screener text-[10px] uppercase tracking-[0.28em] text-background transition-opacity duration-300 hover:opacity-80"
-                        >
-                            <span aria-hidden="true" className="size-1.5 rounded-full bg-background" />
-                            Launch project
-                        </a>
+                        <div {...{ [FADE_ATTR]: "" }} className="mt-10 w-full max-w-xl border border-foreground/10 bg-[#e9e8e3] px-6 py-5 text-background">
+                            <p className="mb-3 font-screener text-[10px] uppercase tracking-[0.32em] text-background/55">Live / Output URL</p>
+                            <a
+                                href={resolved.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-3 font-screener text-[10px] uppercase tracking-[0.28em] text-background underline underline-offset-4 transition-opacity hover:opacity-70"
+                            >
+                                Launch project
+                                <span aria-hidden="true">↗</span>
+                            </a>
+                        </div>
                     )}
                 </section>
 
-                {/* main media panel */}
+                {/* cover panel */}
                 <section className="flex shrink-0 items-center px-4 py-3 md:h-full md:px-6 md:py-0">
                     <div data-pop="" className="relative w-full will-change-transform">
                         <div
@@ -173,7 +175,7 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                             style={{ borderRadius: 6, filter: "blur(var(--mb, 0px))" }}
                         >
                             <GalleryMedia
-                                src={resolved.video || resolved.media || "/media-placeholder.svg"}
+                                src={resolved.media || "/media-placeholder.svg"}
                                 poster={getWorkPoster(resolved)}
                                 alt={resolved.name}
                                 autoPlay
@@ -181,10 +183,41 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                             />
                         </div>
                         {resolved.mediaCaption ? (
-                            <p className="absolute left-0 top-full mt-2 font-screener text-[10px] uppercase tracking-[0.24em] text-foreground/60">{resolved.mediaCaption}</p>
+                            <p {...{ [FADE_ATTR]: "" }} className="absolute left-0 top-full mt-2 font-screener text-[10px] uppercase tracking-[0.24em] text-foreground/60">
+                                {resolved.mediaCaption}
+                            </p>
                         ) : null}
                     </div>
                 </section>
+                {/* video panel (YouTube or direct) */}
+                {resolved.video ? (
+                    <section className="flex shrink-0 items-center px-4 py-3 md:h-full md:px-6 md:py-0">
+                        <div data-pop="" className="relative w-full will-change-transform">
+                            <div
+                                {...{ [FADE_ATTR]: "" }}
+                                className="relative w-full md:w-[min(86vw,calc(62vh*1.6))] aspect-[16/10] overflow-hidden bg-foreground text-background"
+                                style={{ borderRadius: 6, filter: "blur(var(--mb, 0px))" }}
+                            >
+                                {(() => {
+                                    const v = resolved.video || "";
+                                    const ytMatch = v.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([\w-]{6,})/);
+                                    if (ytMatch) {
+                                        return (
+                                            <iframe
+                                                className="absolute inset-0 h-full w-full"
+                                                src={`https://www.youtube-nocookie.com/embed/${ytMatch[1]}?rel=0&modestbranding=1&playsinline=1`}
+                                                title={`${resolved.name} video`}
+                                                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                                                allowFullScreen
+                                            />
+                                        );
+                                    }
+                                    return <video src={v} poster={getWorkPoster(resolved)} controls playsInline className="absolute inset-0 h-full w-full object-cover" />;
+                                })()}
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
 
                 {/* gallery panels */}
                 {resolved.gallery.map((item, i) => (
@@ -197,7 +230,11 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                             >
                                 <GalleryMedia src={item.url} alt={`${resolved.name} ${i + 1}`} autoPlay />
                             </div>
-                            {item.caption ? <p className="absolute left-0 top-full mt-2 font-screener text-[10px] uppercase tracking-[0.24em] text-foreground/60">{item.caption}</p> : null}
+                            {item.caption ? (
+                                <p {...{ [FADE_ATTR]: "" }} className="absolute left-0 top-full mt-2 font-screener text-[10px] uppercase tracking-[0.24em] text-foreground/60">
+                                    {item.caption}
+                                </p>
+                            ) : null}
                         </div>
                     </section>
                 ))}
