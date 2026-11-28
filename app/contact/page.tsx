@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactPage } from "@/features/contact-page";
+import { getContactData } from "@/lib/db-content";
 import { createPageMetadata, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = createPageMetadata({
@@ -12,6 +13,9 @@ export const metadata: Metadata = createPageMetadata({
     socialDescription: `Get in touch with ${siteConfig.creator} for creative collaborations.`,
 });
 
-export default function Page() {
-    return <ContactPage />;
+export const instant = false;
+
+export default async function Page() {
+    const contact = await getContactData();
+    return <ContactPage contact={contact} />;
 }
