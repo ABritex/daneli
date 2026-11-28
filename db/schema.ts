@@ -83,6 +83,8 @@ export const works = pgTable("works", {
     videoUrl: text("video_url"),
     href: text("href"),
     liveUrl: text("live_url"),
+    liveUrlTitle: text("live_url_title").default("").notNull(),
+    liveUrlCaption: text("live_url_caption").default("").notNull(),
     gallery: text("gallery").array().default([]).notNull(),
     galleryItems: jsonb("gallery_items").$type<{ url: string; caption: string }[]>().default([]).notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),

@@ -12,15 +12,16 @@ type Props = {
     heroArt: string[];
     heroArtMobile: string[];
     reelVideoUrl?: string;
+    reelNotes?: string;
 };
 
-export function LandingPage({ works, heroArt, heroArtMobile, reelVideoUrl }: Props) {
+export function LandingPage({ works, heroArt, heroArtMobile, reelVideoUrl, reelNotes }: Props) {
     return (
         <main className="relative text-foreground">
             <ScrollPill />
             <SectionCorners />
             <div data-intro-fade>
-                <HeroSection art={heroArt} artMobile={heroArtMobile} reelVideoUrl={reelVideoUrl} />
+                <HeroSection art={heroArt} artMobile={heroArtMobile} reelVideoUrl={reelVideoUrl} reelNotes={reelNotes} />
                 <FeaturedWorks works={works} />
                 <AboutSection />
                 <ServicesSection />

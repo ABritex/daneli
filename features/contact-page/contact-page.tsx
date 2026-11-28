@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ContactSocial } from "@/lib/db-content";
-import { ContactForm } from "./contact-form";
-import { ContactInfo } from "./contact-info";
-import { SocialLinks } from "./social-links";
+import { ContactForm } from "./components/contact-form";
+import { ContactInfo } from "./components/contact-info";
+import { SocialLinks } from "./components/social-links";
 
 type Props = {
     contact: {

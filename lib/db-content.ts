@@ -2,7 +2,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { heroImages, resumeActivities, resumeCertificates, resumeEducation, resumeExperiences, resumeProjects, resumeSkills, siteSettings, works as worksTable } from "@/db/schema";
 import { ART, ART_MOBILE } from "@/features/landing-page/hero-section/config/art";
-import { EDUCATION as staticEducation, EXPERIENCE as staticExperience, SKILLS as staticSkills } from "@/features/resume-page/resume-data";
+import { EDUCATION as staticEducation, EXPERIENCE as staticExperience, SKILLS as staticSkills } from "@/features/resume-page/config/resume-data";
 import { siteConfig } from "@/lib/site";
 import { proxyMedia, works as staticWorks, type Work } from "@/features/works/data";
 
@@ -17,6 +17,8 @@ function toWork(row: typeof worksTable.$inferSelect): Work {
         video: row.videoUrl ?? undefined,
         href: row.href ?? `/work/${row.slug}`,
         url: row.liveUrl ?? undefined,
+        urlTitle: row.liveUrlTitle ?? "",
+        urlCaption: row.liveUrlCaption ?? "",
         description: row.description,
         year: row.year,
         client: row.client,

@@ -59,8 +59,8 @@ export function ContactFooter() {
                 </div>
 
                 <div data-footer-item className="col-span-1 md:col-span-1 md:text-right">
-                    <p>Designed &amp; built by</p>
-                    <p className="text-foreground">Daniel Eli © {year || "2026"}</p>
+                    <p>Designed by Elijah Daniel V. Reyes,</p>
+                    <p className="text-foreground">built by <a href="https://nixs-portfolio.vercel.app/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-70">Nicholas Abeleda</a> © {year || "2026"}</p>
                 </div>
             </div>
         </footer>

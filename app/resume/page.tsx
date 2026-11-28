@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ResumePage } from "@/features/resume-page";
+import { getResumeData } from "@/lib/db-content";
 import { createPageMetadata, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = createPageMetadata({
@@ -12,6 +13,9 @@ export const metadata: Metadata = createPageMetadata({
     socialDescription: `Experience, skills, and education of ${siteConfig.creator}.`,
 });
 
-export default function Page() {
-    return <ResumePage />;
+export const instant = false;
+
+export default async function Page() {
+    const resume = await getResumeData();
+    return <ResumePage resume={resume} />;
 }

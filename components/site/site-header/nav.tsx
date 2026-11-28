@@ -41,7 +41,7 @@ export function Nav() {
 
     return (
         <nav className="relative flex h-full w-full items-center justify-center py-0" aria-label="Primary">
-            <div style={idx(0)} className="nav-item flex items-center gap-1.5 rounded-[22px] border border-foreground/[0.06] bg-foreground/[0.09] p-2 backdrop-blur-xl md:gap-2">
+            <div style={idx(0)} className="nav-item flex items-center gap-1.5 rounded-[22px] border border-foreground/[0.15] bg-background/80 p-2 backdrop-blur-xl md:gap-2">
                 <div className="hidden items-center gap-1 pl-3 pr-2 md:flex">
                     {NAV_LINKS.map((item, i) => (
                         <Link key={item.href} href={item.href} style={idx(i + 1)} className="nav-item group/roll px-2.5 py-2 text-sm font-medium leading-none text-foreground/55">

@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 /* edit the words here */
 const HEADING = ["Selected", "reels"];
 const LABEL = "(02) Showreel";
-const COPY = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+const DEFAULT_COPY = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 const TICKER = ["3D Design", "Motion Graphics", "Visual Effects", "Cinematography", "Videography"];
 
 /** the slice of the reels fade (0..1) an element animates in. later slice = later entrance, earlier exit */
@@ -15,7 +15,8 @@ const META = "font-screener text-[10px] uppercase tracking-[0.32em] text-foregro
  * Everything on the reels stage except the wall and the video itself.
  * No state, no effects: every animation reads the --reels number that use-hero-section writes on the stage.
  */
-export function ReelsOverlay() {
+export function ReelsOverlay({ copy }: { copy?: string }) {
+    const text = copy?.trim() || DEFAULT_COPY;
     return (
         <div className="reels-overlay">
             {/* top row */}
@@ -86,7 +87,7 @@ export function ReelsOverlay() {
                         {LABEL}
                     </p>
                     <p className="reels-rv reels-blur-in mt-3 text-sm leading-relaxed text-foreground/70 [text-shadow:0_1px_14px_rgb(0_0_0/0.7)]" style={range(0.6, 1)}>
-                        {COPY}
+                        {text}
                     </p>
                 </div>
             </div>

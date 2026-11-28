@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getWorkSlug, proxyMedia } from "@/features/works";
 import { WorkPage } from "@/features/work-page";
@@ -10,7 +11,10 @@ export const instant = false;
 
 export async function generateStaticParams() {
     const works = await getWorks();
-    return works.map((work) => ({ slug: getWorkSlug(work) }));
+    const params = works.map((work) => ({ slug: getWorkSlug(work) })).filter((p) => p.slug);
+    if (params.length > 0) return params;
+    // Fallback so Cache Components build validation passes when DB has no works yet
+    return [{ slug: "placeholder" }];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -36,25 +40,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
+    if (slug === "placeholder") notFound();
     const [work, allWorks] = await Promise.all([getWorkBySlug(slug), getWorks()]);
-    const jsonLd = work
-        ? {
-              "@context": "https://schema.org",
-              "@type": "CreativeWork",
-              name: work.name,
-              description: work.description,
-              image: work.media ? new URL(proxyMedia(work.media), siteConfig.url).toString() : undefined,
-              url: new URL(`/work/${slug}`, siteConfig.url).toString(),
-              author: {
-                  "@type": "Person",
-                  name: siteConfig.creator,
-              },
-          }
-        : null;
+    if (!work) notFound();
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: work.name,
+        description: work.description,
+        image: work.media ? new URL(proxyMedia(work.media), siteConfig.url).toString() : undefined,
+        url: new URL(`/work/${slug}`, siteConfig.url).toString(),
+        author: {
+            "@type": "Person",
+            name: siteConfig.creator,
+        },
+    };
 
     return (
         <>
-            {jsonLd ? <JsonLd data={jsonLd} /> : null}
+            <JsonLd data={jsonLd} />
             <WorkPage work={work} allWorks={allWorks} />
         </>
     );

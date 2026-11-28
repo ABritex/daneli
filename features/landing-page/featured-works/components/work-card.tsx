@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getWorkPoster, getWorkSlug, isVideoSrc, type Work } from "@/features/works";
+import { getPlayableVideo, getWorkPoster, getWorkSlug, type Work } from "@/features/works";
 import { TextAnimate } from "@/components/effects";
 import { TagList } from "@/components/ui/tag-list";
 
@@ -14,7 +14,7 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
     const w = work;
     const [mediaFailed, setMediaFailed] = useState(false);
     const poster = getWorkPoster(w);
-    const videoSrc = w.video || (w.media && isVideoSrc(w.media) ? w.media : "");
+    const videoSrc = getPlayableVideo(w);
     return (
         <article
             data-work
@@ -40,6 +40,7 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
                         className="absolute inset-0 h-full w-full object-cover"
                         onError={(e) => {
                             const v = e.currentTarget;
+                            console.warn("[WorkCard] video failed", { work: w.name, src: v.currentSrc || v.dataset.src, code: v.error?.code });
                             if (v.crossOrigin) {
                                 v.crossOrigin = null;
                                 v.removeAttribute("crossorigin");
@@ -60,6 +61,7 @@ export function WorkCard({ work, onOpen }: WorkCardProps) {
                         className="absolute inset-0 h-full w-full object-cover"
                         onError={(e) => {
                             const img = e.currentTarget;
+                            console.warn("[WorkCard] image failed", { work: w.name, src: img.currentSrc || poster });
                             if (img.crossOrigin) {
                                 img.crossOrigin = null;
                                 img.removeAttribute("crossorigin");

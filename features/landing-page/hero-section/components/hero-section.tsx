@@ -1,13 +1,19 @@
 "use client";
 
 import { ChevronsDown } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EXIT_BAND, HERO_MARKER_VH, STAGE_VH, VIGNETTE } from "../config/config";
 import { ReelsVideo } from "./reels-video";
 import { ReelsOverlay } from "./reels-overlay";
 import { useHeroScene } from "../hooks/use-hero-scene";
 
-export function HeroSection({ art, artMobile, reelVideoUrl }: { art: string[]; artMobile: string[]; reelVideoUrl?: string }) {
+/* once the loader is done the hero word blurs, shrinks and greys out all at the same time */
+const HERO_BLUR_PX = 8;
+const HERO_SCALE = 0.78; /* smaller = more shrink */
+const HERO_GREY = 35; /* % of the foreground colour left */
+const HERO_SETTLE_MS = 1400;
+
+export function HeroSection({ art, artMobile, reelVideoUrl, reelNotes }: { art: string[]; artMobile: string[]; reelVideoUrl?: string; reelNotes?: string }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const stageRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -18,6 +24,19 @@ export function HeroSection({ art, artMobile, reelVideoUrl }: { art: string[]; a
     const reelsVideoRef = useRef<HTMLDivElement>(null);
     const vignetteRef = useRef<HTMLDivElement>(null);
     const exitRef = useRef<HTMLDivElement>(null);
+    const [loaded, setLoaded] = useState(false);
+
+    /* sharp, full size and full colour while the loader is up (matches the loader word exactly) */
+    useEffect(() => {
+        const root = document.documentElement;
+        const check = () => {
+            const state = root.dataset.loader;
+            if (state === "done" || state === "skip") setLoaded(true);
+        };
+        check();
+        window.addEventListener("daneli-loader-done", check);
+        return () => window.removeEventListener("daneli-loader-done", check);
+    }, []);
 
     useHeroScene({
         canvasRef,
@@ -38,8 +57,17 @@ export function HeroSection({ art, artMobile, reelVideoUrl }: { art: string[]; a
         <div ref={wrapperRef} className="relative" style={{ height: `${STAGE_VH}vh` }}>
             <div ref={stageRef} className="sticky top-0 h-screen overflow-hidden">
                 <div ref={heroOverlayRef} className="pointer-events-none relative z-0 flex h-full items-center justify-center px-6 text-center will-change-[transform,opacity]">
-                    <h1 id="hero-heading" className="font-monument text-[clamp(3.4rem,18vw,22rem)] font-extrabold uppercase leading-none text-foreground opacity-100">
-                        DANELI
+                    <h1
+                        id="hero-heading"
+                        className="font-monument text-[clamp(2.6rem,14vw,17rem)] font-extrabold uppercase leading-none"
+                        style={{
+                            filter: `blur(${loaded ? HERO_BLUR_PX : 0}px)`,
+                            transform: `scale(${loaded ? HERO_SCALE : 1})`,
+                            color: loaded ? `color-mix(in srgb, var(--foreground) ${HERO_GREY}%, transparent)` : "var(--foreground)",
+                            transition: `filter ${HERO_SETTLE_MS}ms cubic-bezier(.22,1,.36,1), transform ${HERO_SETTLE_MS}ms cubic-bezier(.22,1,.36,1), color ${HERO_SETTLE_MS}ms ease`,
+                        }}
+                    >
+                        WELCOME
                     </h1>
                 </div>
                 <canvas ref={canvasRef} className="absolute inset-0 z-[1] block h-full w-full" aria-hidden="true" />
@@ -77,7 +105,7 @@ export function HeroSection({ art, artMobile, reelVideoUrl }: { art: string[]; a
                     </span>
                 </div>
 
-                <ReelsOverlay />
+                <ReelsOverlay copy={reelNotes} />
             </div>
 
             {/* two semantic sections share the pinned stage; the split marks where

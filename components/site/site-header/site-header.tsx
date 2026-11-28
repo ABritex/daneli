@@ -197,10 +197,10 @@ export function SiteHeader() {
                     >
                         <span
                             aria-hidden="true"
-                            className="block h-8 aspect-[1385/1664] -translate-y-[4px] bg-foreground md:h-10"
+                            className="block h-8 w-8 bg-foreground md:h-10 md:w-10"
                             style={{
-                                maskImage: "url(/daneli-word/daneli-logo-d.svg)",
-                                WebkitMaskImage: "url(/daneli-word/daneli-logo-d.svg)",
+                                maskImage: "url(/daneli-word/daneli_logo.svg)",
+                                WebkitMaskImage: "url(/daneli-word/daneli_logo.svg)",
                                 maskSize: "contain",
                                 WebkitMaskSize: "contain",
                                 maskRepeat: "no-repeat",
@@ -282,9 +282,7 @@ export function SiteHeader() {
                             transition: `opacity 600ms ease ${open ? 650 : 0}ms`,
                         }}
                     >
-                        Designed &amp; built by
-                        <br />
-                        Daniel Eli © 2026
+                        © 2026 Elijah Daniel V. Reyes
                     </p>
                 </div>
             </div>

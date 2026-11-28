@@ -6,6 +6,7 @@ import { GalleryMedia } from "./components/gallery-media";
 import { getWorkPoster, getWorkSlug, getWorkVideo, proxyWork, works as staticWorks, useWorkTransition, PAGE_BG, FADE_ATTR, type Work } from "@/features/works";
 import { TagList } from "@/components/ui/tag-list";
 import { SpiralLoader } from "./components/spiral-loader";
+import { UrlBar, UrlPanel } from "./components/url-panel";
 import { useOverscrollProgress } from "./hooks/use-overscroll-progress";
 import { usePopOnScroll } from "./hooks/use-pop-on-scroll";
 import { useRevealOnScroll } from "./hooks/use-reveal-on-scroll";
@@ -149,21 +150,6 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                             </p>
                         </div>
                     </div>
-
-                    {resolved.url && (
-                        <div {...{ [FADE_ATTR]: "" }} className="mt-10 w-full max-w-xl border border-foreground/10 bg-[#e9e8e3] px-6 py-5 text-background">
-                            <p className="mb-3 font-screener text-[10px] uppercase tracking-[0.32em] text-background/55">Live / Output URL</p>
-                            <a
-                                href={resolved.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-3 font-screener text-[10px] uppercase tracking-[0.28em] text-background underline underline-offset-4 transition-opacity hover:opacity-70"
-                            >
-                                Launch project
-                                <span aria-hidden="true">↗</span>
-                            </a>
-                        </div>
-                    )}
                 </section>
 
                 {/* cover panel */}
@@ -189,13 +175,25 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                         ) : null}
                     </div>
                 </section>
-                {/* video panel (YouTube or direct) */}
+                {/* video panel (YouTube or direct).
+                    the video is centred exactly like every other panel; the title sits above it and the caption + url below it
+                    (absolute on desktop, so they never push the video off-centre) */}
                 {resolved.video ? (
-                    <section className="flex shrink-0 items-center px-4 py-3 md:h-full md:px-6 md:py-0">
-                        <div data-pop="" className="relative w-full will-change-transform">
+                    <section className="relative flex shrink-0 items-center px-4 py-3 md:h-full md:px-12 md:py-0">
+                        {/* full-height white, same colour as the "next project" footer */}
+                        <div aria-hidden="true" className="absolute inset-0 bg-[#e9e8e3]" />
+                        <div data-pop="" className="relative z-10 w-full will-change-transform">
+                            {resolved.urlTitle?.trim() ? (
+                                <p
+                                    {...{ [FADE_ATTR]: "" }}
+                                    className="mb-3 max-w-[min(86vw,calc(62vh*1.6))] text-xl font-extrabold leading-tight tracking-[-0.02em] text-background md:absolute md:bottom-full md:left-0 md:mb-5 md:text-3xl"
+                                >
+                                    {resolved.urlTitle.trim()}
+                                </p>
+                            ) : null}
                             <div
                                 {...{ [FADE_ATTR]: "" }}
-                                className="relative w-full md:w-[min(86vw,calc(62vh*1.6))] aspect-[16/10] overflow-hidden bg-foreground text-background"
+                                className="relative w-full md:w-[min(86vw,calc(62vh*1.6))] aspect-[16/10] overflow-hidden bg-[#111]"
                                 style={{ borderRadius: 6, filter: "blur(var(--mb, 0px))" }}
                             >
                                 {(() => {
@@ -215,9 +213,22 @@ export function WorkPage({ work: rawWork, allWorks: rawAllWorks }: { work?: Work
                                     return <video src={v} poster={getWorkPoster(resolved)} controls playsInline className="absolute inset-0 h-full w-full object-cover" />;
                                 })()}
                             </div>
+                            {resolved.urlCaption?.trim() || resolved.url ? (
+                                <div className="mt-3 md:absolute md:left-0 md:top-full md:w-full">
+                                    {resolved.urlCaption?.trim() ? (
+                                        <p {...{ [FADE_ATTR]: "" }} className="max-w-[min(86vw,calc(62vh*1.6))] text-sm leading-relaxed text-background/70 md:text-base">
+                                            {resolved.urlCaption.trim()}
+                                        </p>
+                                    ) : null}
+                                    {resolved.url ? <UrlBar url={resolved.url} /> : null}
+                                </div>
+                            ) : null}
                         </div>
                     </section>
                 ) : null}
+
+                {/* live / output url panel (only when the client adds a url) */}
+                {resolved.url && !resolved.video ? <UrlPanel url={resolved.url} title={resolved.urlTitle} caption={resolved.urlCaption} /> : null}
 
                 {/* gallery panels */}
                 {resolved.gallery.map((item, i) => (
